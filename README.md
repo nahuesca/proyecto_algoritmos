@@ -124,6 +124,7 @@ tecnicos — diccionario con ID de técnico. Cada uno tiene: nombre, teléfono, 
 ordenes — diccionario con ID único autoincremental. Cada orden tiene: ID, teléfono del cliente, ID del técnico, descripción del problema, estado (pendiente / en_proceso / completada / cobrada), fecha de creación, fecha de visita, lista de repuestos (nombre + costo), monto total, y referencia al pago.
 pagos — diccionario con ID de pago. Cada pago tiene: ID de orden asociada, monto total de la deuda, lista de transacciones (monto + método + fecha), y saldo restante.
 presupuestos — diccionario con ID de presupuesto. Cada uno tiene: ID de orden, lista de repuestos con precio, tipo de trabajo (simple / complicado), costo de mano de obra, total calculado, total ajustado (si el dueño lo modificó), y estado (aprobado / rechazado / pendiente).
+
 Módulo 1 — Órdenes de Servicio
 Variables clave: 
 ordenes, clientes, contador ultimo_id_orden.
@@ -133,6 +134,7 @@ Cómo funciona:
 La función crear_orden pide los datos del cliente y del trabajo, da de alta al cliente en clientes si no existe, genera un ID automático y guarda la orden en ordenes con estado pendiente. 
 La función cambiar_estado_orden busca una orden por su ID y avanza su estado (pendiente → en_proceso → completada → cobrada). 
 La función mostrar_ordenes_pendientes filtra ordenes y muestra solo las que están pendientes o en proceso, para ver de un vistazo qué falta hacer.
+
 Módulo 2 — Gestión de Técnicos
 Variables clave: 
 tecnicos, ordenes.
@@ -142,6 +144,7 @@ Cómo funciona:
 La función registrar_tecnico agrega un técnico nuevo a tecnicos con su nombre y especialidad. 
 La función mostrar_tecnicos lista los técnicos junto con su disponibilidad. 
 La función asignar_tecnico_a_orden vincula un técnico a una orden existente, actualizando el campo correspondiente dentro de ordenes.
+
 Módulo 3 — Control de Pagos y Deudas
 Variables clave: 
 pagos, ordenes, clientes.
@@ -150,6 +153,7 @@ Registra todo el movimiento de plata: quién pagó, cuánto, y quién todavía d
 Cómo funciona: 
 La función registrar_pago agrega una transacción de pago (monto, método, fecha) vinculada a una orden, y recalcula el saldo pendiente. 
 La función ver_estado_pagos filtra pagos y muestra la lista de clientes con saldo mayor a cero, junto con cuánto deben.
+
 Módulo 4 — Búsqueda e Historial de Clientes
 Variables clave: 
 clientes, ordenes, pagos.
@@ -158,6 +162,7 @@ Permite encontrar cualquier información sobre un cliente en pocos pasos.
 Cómo funciona: 
 La función buscar_cliente acepta un texto libre y busca coincidencias en el teléfono o el nombre dentro de clientes. 
 La función ver_historial_cliente arma una vista consolidada del cliente seleccionado, mostrando sus órdenes (con estado) y su deuda total pendiente.
+
 Módulo 5 — Presupuestos y Costos
 Variables clave: 
 presupuestos, ordenes.
