@@ -15,79 +15,85 @@ Pierde tiempo buscando datos viejos de clientes
 Información se pierde: hojas sueltas, chats, memoria
 Tareas repetidas: anotar pedido, pasarlo por WhatsApp, facturar
 Presupuestos y cálculos de mano de obra manuales
+
 2) MÓDULOS IDENTIFICADOS
+
 Módulo 1 – Registro y Gestión de Órdenes de Servicio
 Centraliza cada trabajo: cliente, problema, técnico asignado, estado, presupuesto, repuestos y estado de cobro.
 Funcionalidades:
-Crear orden con: nombre, teléfono, dirección, descripción del problema y técnico asignado
-Cambiar estado: Pendiente → En Proceso → Completada → Cobrada
-Ver órdenes abiertas y buscar por cliente, teléfono o ID
-Registrar repuestos utilizados y costos
-Vincular orden con pago (cobrada / pendiente de cobro)
-Historial de cambios de estado con fecha y hora
-Justificación: El dueño definió como lo más urgente "saber en qué estado está cada laburo": si está pendiente, si el técnico ya fue, o si terminó y hay que cobrarlo. Hoy busca esa información revolviendo cuadernos o scrolleando kilométricos chats de WhatsApp.
+  Crear orden con: nombre, teléfono, dirección, descripción del problema y técnico asignado
+  Cambiar estado: Pendiente → En Proceso → Completada → Cobrada
+  Ver órdenes abiertas y buscar por cliente, teléfono o ID
+  Registrar repuestos utilizados y costos
+  Vincular orden con pago (cobrada / pendiente de cobro)
+  Historial de cambios de estado con fecha y hora
+  Justificación: El dueño definió como lo más urgente "saber en qué estado está cada laburo": si está pendiente, si el técnico ya fue, o si terminó y hay que cobrarlo. Hoy busca esa información revolviendo cuadernos o scrolleando kilométricos chats de WhatsApp.
 Supuestos:
-Cada orden tiene ID único autogenerado
-DNI del cliente no es obligatorio (nunca fue mencionado)
-Una orden puede tener múltiples repuestos
-El dueño gestiona los estados manualmente; los técnicos no acceden al sistema
+  Cada orden tiene ID único autogenerado
+  DNI del cliente no es obligatorio (nunca fue mencionado)
+  Una orden puede tener múltiples repuestos
+  El dueño gestiona los estados manualmente; los técnicos no acceden al sistema
+
 Módulo 2 – Gestión de Técnicos y Asignación de Trabajos
-Registra los técnicos disponibles, muestra qué tiene asignado cada uno y permite reasignar ante urgencias.
-Funcionalidades:
-Registrar técnicos (nombre y teléfono)
-Asignar o reasignar una orden a un técnico
-Ver órdenes por técnico (pendientes y en proceso)
-Ver estado de cada técnico: disponible u ocupado
-Ver histórico de trabajos por técnico
+  Registra los técnicos disponibles, muestra qué tiene asignado cada uno y permite reasignar ante urgencias.
+  Funcionalidades:
+  Registrar técnicos (nombre y teléfono)
+  Asignar o reasignar una orden a un técnico
+  Ver órdenes por técnico (pendientes y en proceso)
+  Ver estado de cada técnico: disponible u ocupado
+  Ver histórico de trabajos por técnico
 Justificación: El dueño organiza el día "a los ponchazos" y cuando entra una urgencia necesita saber de inmediato quién está libre. Hoy lo averigua llamando o esperando que el técnico avise. A veces el técnico termina sin avisar y él no sabe si puede llamar al cliente a cobrarle.
 Supuestos:
-Los técnicos tienen horarios flexibles
-La priorización la decide el dueño, no el sistema
-Los técnicos NO acceden al sistema; reciben la info por WhatsApp o llamada
-El estado disponible/ocupado lo actualiza el dueño manualmente
+  Los técnicos tienen horarios flexibles
+  La priorización la decide el dueño, no el sistema
+  Los técnicos NO acceden al sistema; reciben la info por WhatsApp o llamada
+  El estado disponible/ocupado lo actualiza el dueño manualmente
+  
 Módulo 3 – Control de Pagos y Deudas
-Registra pagos, deudas y tipo de cliente. Vincula cada cobro con su orden correspondiente.
-Funcionalidades:
-Registrar pago por orden: efectivo, transferencia, a deber o en cuotas
-Registrar pagos parciales descontando del total adeudado
-Listar clientes con deuda y monto
-Clasificar clientes: frecuente (descuento/cuotas), nuevo (pago inmediato), problemático (sin crédito)
-Ver historial de pagos por cliente
-Alertar cuando un cliente nuevo o problemático tiene deuda vieja
-Permitir corregir estado de pago (error, cheque rebotado, etc.)
+  Registra pagos, deudas y tipo de cliente. Vincula cada cobro con su orden correspondiente.
+  Funcionalidades:
+  Registrar pago por orden: efectivo, transferencia, a deber o en cuotas
+  Registrar pagos parciales descontando del total adeudado
+  Listar clientes con deuda y monto
+  Clasificar clientes: frecuente (descuento/cuotas), nuevo (pago inmediato), problemático (sin crédito)
+  Ver historial de pagos por cliente
+  Alertar cuando un cliente nuevo o problemático tiene deuda vieja
+  Permitir corregir estado de pago (error, cheque rebotado, etc.)
 Justificación: "Si pierdo el dato de una deuda, es plata que regala el negocio." El dueño diferencia entre clientes buenos (les permite deber) y problemáticos (les exige pagar primero). Los pagos parciales son frecuentes y deben descontarse correctamente del total para no generar reclamos erróneos.
 Supuestos:
-Tres tipos de cliente: frecuente, nuevo y problemático (el dueño asigna el tipo manualmente)
-"Cobrado" y "facturado" son estados distintos
-Los pagos en cuotas se registran como transacciones separadas pero vinculadas a la misma deuda
-El dueño decide caso a caso si atender a un cliente con deuda; el sistema no lo bloquea automáticamente
+  Tres tipos de cliente: frecuente, nuevo y problemático (el dueño asigna el tipo manualmente)
+  "Cobrado" y "facturado" son estados distintos
+  Los pagos en cuotas se registran como transacciones separadas pero vinculadas a la misma deuda
+  El dueño decide caso a caso si atender a un cliente con deuda; el sistema no lo bloquea automáticamente
+  
 Módulo 4 – Búsqueda e Historial de Clientes
 Acceso rápido al historial completo de un cliente: trabajos, pagos, deudas y tipo.
 Funcionalidades:
-Buscar por nombre, teléfono o apodo (ej.: "el de la esquina")
-Ver todos los trabajos realizados en orden cronológico
-Ver deuda pendiente, última intervención y tipo de cliente
-Ver detalle de un trabajo viejo (qué se hizo, con quién, cuánto se cobró)
-Filtrar solo órdenes pendientes o incompletas
+  Buscar por nombre, teléfono o apodo (ej.: "el de la esquina")
+  Ver todos los trabajos realizados en orden cronológico
+  Ver deuda pendiente, última intervención y tipo de cliente
+  Ver detalle de un trabajo viejo (qué se hizo, con quién, cuánto se cobró)
+  Filtrar solo órdenes pendientes o incompletas
 Justificación: Los técnicos llaman desde la calle para preguntar dirección o forma de cobro porque no tienen acceso a la información. El dueño identifica clientes por nombre de pila, empresa o referencias informales, rara vez por apellido. Necesita acceder a todo en pocos pasos: "si tengo que hacer veinte clics, no lo voy a usar."
 Supuestos:
-La búsqueda por teléfono es prioritaria
-Se admiten referencias informales como criterio de búsqueda
-Historial en orden cronológico descendente
+  La búsqueda por teléfono es prioritaria
+  Se admiten referencias informales como criterio de búsqueda
+  Historial en orden cronológico descendente
+  
 Módulo 5 – Cálculo de Presupuestos y Costos
 Asiste en el armado de presupuestos y en el cálculo de lo que corresponde pagarle a cada técnico al cierre del mes.
 Funcionalidades:
-Lista de repuestos con precios base ajustables por trabajo
-Clasificar trabajo como simple o complicado (define el valor de mano de obra)
-Calcular presupuesto automáticamente (repuestos + mano de obra) con posibilidad de ajuste manual
-Registrar presupuestos rechazados
-Calcular lo que corresponde pagarle a cada técnico al cierre del mes
+  Lista de repuestos con precios base ajustables por trabajo
+  Clasificar trabajo como simple o complicado (define el valor de mano de obra)
+  Calcular presupuesto automáticamente (repuestos + mano de obra) con posibilidad de ajuste manual
+  Registrar presupuestos rechazados
+  Calcular lo que corresponde pagarle a cada técnico al cierre del mes
 Justificación: El dueño calcula presupuestos "a ojo" y estima la mano de obra según si el trabajo es simple o complicado. Hoy los presupuestos rechazados se olvidan o quedan perdidos en notas. El cálculo de pago a técnicos también es manual y propenso a error.
 Supuestos:
-Solo dos categorías de mano de obra: simple y complicada
-Los técnicos cobran por comisión o porcentaje, no por hora fija
-En trabajos simples el presupuesto se hace antes de ir; en complicados se ajusta en el lugar
-El cálculo de fin de mes es orientativo; el dueño lo verifica igualmente
+  Solo dos categorías de mano de obra: simple y complicada
+  Los técnicos cobran por comisión o porcentaje, no por hora fija
+  En trabajos simples el presupuesto se hace antes de ir; en complicados se ajusta en el lugar
+  El cálculo de fin de mes es orientativo; el dueño lo verifica igualmente
 4. Relaciones entre Módulos
 Cada orden de servicio se conecta con el técnico asignado (M2), su estado de pago (M3) y el historial del cliente (M4). Un pago siempre queda vinculado a una orden específica, o a la deuda vieja si es un pago parcial. El dueño cierra el ciclo: marca la orden como completada cuando el técnico termina, y como cobrada cuando recibe el pago.
 5. Flujo de un Trabajo Típico
