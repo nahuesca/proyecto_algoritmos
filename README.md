@@ -94,41 +94,50 @@ Supuestos:
   Los técnicos cobran por comisión o porcentaje, no por hora fija
   En trabajos simples el presupuesto se hace antes de ir; en complicados se ajusta en el lugar
   El cálculo de fin de mes es orientativo; el dueño lo verifica igualmente
+  
 4. Relaciones entre Módulos
-Cada orden de servicio se conecta con el técnico asignado (M2), su estado de pago (M3) y el historial del cliente (M4). Un pago siempre queda vinculado a una orden específica, o a la deuda vieja si es un pago parcial. El dueño cierra el ciclo: marca la orden como completada cuando el técnico termina, y como cobrada cuando recibe el pago.
+  Cada orden de servicio se conecta con el técnico asignado (M2), su estado de pago (M3) y el historial del cliente (M4). Un pago siempre queda vinculado a una orden específica, o a la deuda vieja si es un pago parcial. El dueño cierra el ciclo: marca la orden como completada cuando el técnico termina, y como cobrada cuando recibe el pago.
+
 5. Flujo de un Trabajo Típico
-Cliente llama → Dueño registra orden → Estado: PENDIENTE
-Técnico llega al trabajo → Estado: EN PROCESO
-Técnico termina y avisa → Estado: COMPLETADA
-Se cobra → Dueño registra pago → Estado: COBRADA → Orden archivada
-Si hay deuda anterior: el sistema informa al dueño, quien decide si hace el trabajo igual o exige pago previo. Si el cliente paga algo a cuenta, se registra como pago parcial vinculado a esa deuda.
+  Cliente llama → Dueño registra orden → Estado: PENDIENTE
+  Técnico llega al trabajo → Estado: EN PROCESO
+  Técnico termina y avisa → Estado: COMPLETADA
+  Se cobra → Dueño registra pago → Estado: COBRADA → Orden archivada
+  Si hay deuda anterior: el sistema informa al dueño, quien decide si hace el trabajo igual o exige pago previo. Si el cliente paga algo a cuenta, se registra como pago parcial vinculado a esa deuda.
+
 6. Supuestos y Limitaciones
-Supuestos generales:
-Sin autenticación/login: lo usa solo el dueño desde una PC
-Sin integración con AFIP ni sistemas impositivos
-Sin notificaciones automáticas a técnicos (coordinación sigue por WhatsApp)
-Sin acceso de clientes ni técnicos al sistema
-Limitaciones conocidas:
-Pagos se registran manualmente (sin integración bancaria)
-Sin reportes de ganancias/pérdidas automáticos
-Sin alertas automáticas de deuda: el dueño las ve cuando busca al cliente
-El sistema no bloquea trabajar con clientes deudores; el dueño decide
+  Supuestos generales:
+  Sin autenticación/login: lo usa solo el dueño desde una PC
+  Sin integración con AFIP ni sistemas impositivos
+  Sin notificaciones automáticas a técnicos (coordinación sigue por WhatsApp)
+  Sin acceso de clientes ni técnicos al sistema
+  Limitaciones conocidas:
+  Pagos se registran manualmente (sin integración bancaria)
+  Sin reportes de ganancias/pérdidas automáticos
+  Sin alertas automáticas de deuda: el dueño las ve cuando busca al cliente
+  El sistema no bloquea trabajar con clientes deudores; el dueño decide
+
 7. MVP – Mínimo Viable
-Obligatorio:
-Registro y gestión de órdenes de servicio
-Control de pagos y deudas
-Búsqueda rápida por teléfono o nombre
-Puede esperar: 4. Gestión de técnicos y asignación 5. Cálculo de presupuestos
-Con los tres primeros, el dueño cubre lo esencial: saber qué trabajos hay, en qué estado están y si ya se cobraron.
+  Obligatorio:
+  Registro y gestión de órdenes de servicio
+  Control de pagos y deudas
+  Búsqueda rápida por teléfono o nombre
+  Puede esperar: 4. Gestión de técnicos y asignación 5. Cálculo de presupuestos
+  Con los tres primeros, el dueño cubre lo esencial: saber qué trabajos hay, en qué estado están y si ya se cobraron.
 
 # ETAPA 3 – DESARROLLO 
 Análisis técnico de cada módulo 
 Estructuras de datos globales
 Antes de los módulos, defininimos qué "tablas" van a estar en memoria:
+
 clientes — diccionario donde la clave es el teléfono (es lo que el dueño siempre tiene a mano). Cada cliente tiene: nombre, teléfono, dirección, tipo (frecuente / nuevo / problematico), y lista de IDs de órdenes asociadas.
+
 tecnicos — diccionario con ID de técnico. Cada uno tiene: nombre, teléfono, y lista de IDs de órdenes asignadas.
+
 ordenes — diccionario con ID único autoincremental. Cada orden tiene: ID, teléfono del cliente, ID del técnico, descripción del problema, estado (pendiente / en_proceso / completada / cobrada), fecha de creación, fecha de visita, lista de repuestos (nombre + costo), monto total, y referencia al pago.
+
 pagos — diccionario con ID de pago. Cada pago tiene: ID de orden asociada, monto total de la deuda, lista de transacciones (monto + método + fecha), y saldo restante.
+
 presupuestos — diccionario con ID de presupuesto. Cada uno tiene: ID de orden, lista de repuestos con precio, tipo de trabajo (simple / complicado), costo de mano de obra, total calculado, total ajustado (si el dueño lo modificó), y estado (aprobado / rechazado / pendiente).
 
 Módulo 1 — Órdenes de Servicio
@@ -147,9 +156,12 @@ tecnicos, ordenes.
 Qué hace: 
 Mantiene el registro de los técnicos y permite ver quién está disponible y asignarlo a un trabajo.
 Cómo funciona: 
-La función registrar_tecnico agrega un técnico nuevo a tecnicos con su nombre y especialidad. 
+La función registrar_tecnico agrega un técnico nuevo a tecnicos con su nombre y especialidad.
+
 La función mostrar_tecnicos lista los técnicos junto con su disponibilidad. 
+
 La función asignar_tecnico_a_orden vincula un técnico a una orden existente, actualizando el campo correspondiente dentro de ordenes.
+
 
 Módulo 3 — Control de Pagos y Deudas
 Variables clave: 
