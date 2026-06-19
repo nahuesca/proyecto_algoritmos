@@ -19,10 +19,11 @@ ultimo_id_tecnico = 0
 # MÓDULO 1 - ÓRDENES DE SERVICIO
 # ============================================================
 
-#Módulo 1 - Crear orden
-
-def crear_orden(ultimo_id_orden):
+# Pide los datos de una nueva orden, registra al cliente si no existe,
+# genera un id nuevo y guarda la orden con estado "pendiente".
+def crear_orden(ordenes, clientes, ultimo_id_orden):
     print("\n--- Nueva orden de servicio ---")
+
     telefono = input("Telefono del cliente: ")  # identificador principal del cliente
     nombre = input("Nombre del cliente: ")  # nombre para mostrar en pantallas/historial
     direccion = input("Direccion: ")  # donde se realiza el trabajo
@@ -32,7 +33,7 @@ def crear_orden(ultimo_id_orden):
     if telefono not in clientes:  # si el telefono no esta registrado
         clientes[telefono] = {"nombre": nombre, "ordenes": []}  # creamos al cliente nuevo
 
-    nuevo_id = ultimo_id_orden + 1  # calculamos el proximo id sin tocar el original todavia
+    nuevo_id = ultimo_id_orden + 1  # calculamos el proximo id
 
     ordenes[nuevo_id] = {  # creamos la orden con sus datos
         "telefono_cliente": telefono,  # vinculo con el cliente
@@ -47,30 +48,26 @@ def crear_orden(ultimo_id_orden):
 
     print(f"Orden creada con exito. Numero de orden: {nuevo_id}")  # confirmacion al usuario
 
-    return nuevo_id  # devolvemos el nuevo id para que el menu actualice el contador
+    return ordenes, clientes, nuevo_id  # devolvemos las estructuras y el nuevo id
  
 # Busca una orden por id, valida que exista, y actualiza su estado al nuevo valor ingresado.
 def cambiar_estado_orden(ordenes):
     print("\n--- Cambiar estado de orden ---")
-
     estados_validos = ["pendiente", "en_proceso", "completada", "cobrada"]  # estados posibles del sistema
 
-    id_orden = input("Ingrese el numero de orden: ")  # pedimos el id al usuario
-
-    if not id_orden.isdigit():  # verificamos que sea un numero
+    try:
+        id_orden = int(input("Ingrese el numero de orden: "))  # intentamos convertir a entero
+    except ValueError:  # si el usuario ingreso texto u otro valor invalido
         print("El numero de orden debe ser un valor numerico.")
         return ordenes  # devolvemos sin cambios
-
-    id_orden = int(id_orden)  # convertimos a entero para buscar en el diccionario
 
     if id_orden not in ordenes:  # verificamos que la orden exista
         print(f"No se encontro una orden con el numero {id_orden}.")
         return ordenes  # devolvemos sin cambios
 
-    orden = ordenes[id_orden]  # accedemos a la orden encontrada
-    print(f"Orden encontrada. Estado actual: {orden['estado']}")  # mostramos el estado actual
+    print(f"Orden encontrada. Estado actual: {ordenes[id_orden]['estado']}")  # mostramos el estado actual
 
-    print("Estados disponibles: pendiente, en_proceso, completada, cobrada")  # opciones validas
+    print("Estados disponibles: pendiente, en_proceso, completada, cobrada")
     nuevo_estado = input("Ingrese el nuevo estado: ")  # pedimos el nuevo estado
 
     if nuevo_estado not in estados_validos:  # verificamos que el estado sea valido
@@ -153,7 +150,12 @@ def ver_presupuestos(): #Modulo 5 - Ver presupuestos
  
 def menu():
     opcion = ""
-    ultimo_id_orden = 0  # contador de ordenes, arranca en 0
+    ultimo_id_orden = 0   # contador de ordenes
+    ordenes = {}          # diccionario de ordenes
+    clientes = {}         # diccionario de clientes
+    tecnicos = {}         # diccionario de tecnicos
+    pagos = {}            # diccionario de pagos
+    presupuestos = {}     # diccionario de presupuestos
     while opcion != "0":
         print("\n========== SISTEMA DE GESTIÓN - SERVICIOS TÉCNICOS ==========")
         print("=== Órdenes de Servicio ===")
@@ -177,9 +179,9 @@ def menu():
         print("==============================================================")
 
         opcion = input("Seleccione una opción: ")
- 
+
         if opcion == "1":
-            ultimo_id_orden = crear_orden(ultimo_id_orden) 
+            ordenes, clientes, ultimo_id_orden = crear_orden(ordenes, clientes, ultimo_id_orden)  # actualizamos las tres estructuras
         elif opcion == "2":
             ordenes = cambiar_estado_orden(ordenes)  # actualizamos ordenes con el estado nuevo
         elif opcion == "3":
@@ -206,5 +208,5 @@ def menu():
             print("Saliendo del sistema...")
         else:
             print("Opción inválida. Intente nuevamente.")
- 
+
 menu()
