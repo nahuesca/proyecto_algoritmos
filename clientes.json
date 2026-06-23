@@ -1,0 +1,37 @@
+{
+    "1145678901": {
+        "nombre": "Carlos Mendoza",
+        "dni": "32145678",
+        "direccion": "Av. Corrientes 1234, CABA",
+        "tipo": "frecuente",
+        "ordenes": []
+    },
+    "1167890123": {
+        "nombre": "Ana Gutierrez",
+        "dni": "28976543",
+        "direccion": "Mitre 456, Lomas de Zamora",
+        "tipo": "nuevo",
+        "ordenes": []
+    },
+    "1189012345": {
+        "nombre": "Roberto Sosa",
+        "dni": "35421890",
+        "direccion": "San Martin 789, Moron",
+        "tipo": "problematico",
+        "ordenes": []
+    },
+    "1123456789": {
+        "nombre": "Laura Fernandez",
+        "dni": "41230987",
+        "direccion": "Belgrano 321, Quilmes",
+        "tipo": "frecuente",
+        "ordenes": []
+    },
+    "1156789012": {
+        "nombre": "Diego Ramirez",
+        "dni": "30876543",
+        "direccion": "Rivadavia 654, San Justo",
+        "tipo": "nuevo",
+        "ordenes": []
+    }
+}

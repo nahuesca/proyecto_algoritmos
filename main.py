@@ -15,85 +15,273 @@ ultimo_id_orden = 0
 ultimo_id_tecnico = 0
 
 
-# ============================================================
-# MÓDULO 1 - ÓRDENES DE SERVICIO
-# ============================================================
+# ================================================================
+# MODULO 1 — Ordenes de Servicio
+# Funciones:
+#   cargar_clientes()            — lee el archivo JSON y devuelve el diccionario
+#   guardar_clientes()           — guarda el diccionario en el archivo JSON
+#   buscar_o_crear_cliente()     — busca por telefono, si no existe ofrece crearlo
+#   crear_orden()                — registra una orden nueva
+#   cambiar_estado_orden()       — avanza el estado de una orden existente
+#   mostrar_ordenes_pendientes() — lista las ordenes activas del dia
+# ================================================================
 
-# Pide los datos de una nueva orden, registra al cliente si no existe,
-# genera un id nuevo y guarda la orden con estado "pendiente".
-def crear_orden(ordenes, clientes, ultimo_id_orden):
-    print("\n--- Nueva orden de servicio ---")
+import json                                        # para leer y escribir archivos JSON
+from datetime import date                          # para registrar la fecha de creacion
+from validaciones import validar_telefono, validar_dni  # funciones de validacion compartidas
 
-    telefono = input("Telefono del cliente: ")  # identificador principal del cliente
-    nombre = input("Nombre del cliente: ")  # nombre para mostrar en pantallas/historial
-    direccion = input("Direccion: ")  # donde se realiza el trabajo
-    tipo_trabajo = input("Tipo de trabajo (ej: instalacion, reparacion): ")  # descripcion corta del servicio
-    descripcion = input("Descripcion del problema: ")  # detalle que aporta el cliente
+ARCHIVO_CLIENTES = "clientes.json"  # nombre del archivo donde se guardan los clientes
 
-    if telefono not in clientes:  # si el telefono no esta registrado
-        clientes[telefono] = {"nombre": nombre, "ordenes": []}  # creamos al cliente nuevo
+# Estados posibles de una orden, en orden de avance
+ESTADOS_VALIDOS = ["pendiente", "en_proceso", "completada", "cobrada"]
 
-    nuevo_id = ultimo_id_orden + 1  # calculamos el proximo id
 
-    ordenes[nuevo_id] = {  # creamos la orden con sus datos
-        "telefono_cliente": telefono,  # vinculo con el cliente
-        "direccion": direccion,  # direccion del trabajo
-        "tipo_trabajo": tipo_trabajo,  # tipo de servicio
-        "descripcion": descripcion,  # detalle del problema
-        "estado": "pendiente",  # toda orden nueva arranca pendiente
-        "tecnico_asignado": None,  # todavia no tiene tecnico
+# ----------------------------------------------------------------
+# Lee el archivo JSON y devuelve el diccionario de clientes
+# Si el archivo no existe o esta corrupto, devuelve diccionario vacio
+# ----------------------------------------------------------------
+def cargar_clientes():
+    try:
+        archivo = open(ARCHIVO_CLIENTES, "r", encoding="UTF-8")  # abre en modo lectura
+        contenido = archivo.read()                                # lee todo el texto
+        archivo.close()                                           # cierra el archivo
+        clientes = json.loads(contenido)                          # convierte JSON a diccionario
+        return clientes
+    except FileNotFoundError:
+        # ocurre si el archivo todavia no existe
+        print("Aviso: no se encontro el archivo de clientes. Se empieza con lista vacia.")
+        return {}
+    except json.JSONDecodeError:
+        # ocurre si el archivo existe pero el contenido no es JSON valido
+        print("Error: el archivo de clientes esta corrupto. Se empieza con lista vacia.")
+        return {}
+
+
+# ----------------------------------------------------------------
+# Guarda el diccionario de clientes en el archivo JSON
+# ----------------------------------------------------------------
+def guardar_clientes(clientes):
+    try:
+        archivo = open(ARCHIVO_CLIENTES, "w", encoding="UTF-8")        # abre en modo escritura
+        contenido = json.dumps(clientes, indent=4, ensure_ascii=False)  # convierte a JSON prolijo
+        archivo.write(contenido)                                         # escribe el contenido
+        archivo.close()                                                  # cierra el archivo
+        print("Datos guardados correctamente.")
+    except OSError:
+        # ocurre si no se puede escribir (permisos, disco lleno, etc)
+        print("Error: no se pudieron guardar los datos.")
+
+
+# ----------------------------------------------------------------
+# Busca un cliente por telefono
+# Si no existe, pregunta si se quiere cargar como cliente nuevo
+# Devuelve el telefono si el cliente queda disponible, o None si se cancela
+# ----------------------------------------------------------------
+def buscar_o_crear_cliente(clientes):
+    telefono = input("Ingresa el telefono del cliente (solo numeros): ").strip()
+
+    # Validamos el formato del telefono
+    if not validar_telefono(telefono):
+        print("Telefono invalido. Debe tener entre 8 y 15 digitos numericos.")
+        return None
+
+    # Si ya existe, lo devolvemos directamente
+    if telefono in clientes:
+        print("Cliente encontrado:", clientes[telefono]["nombre"])
+        return telefono
+
+    # Si no existe, ofrecemos cargarlo
+    print("El cliente con telefono", telefono, "no existe en el sistema.")
+    respuesta = input("Queres cargarlo ahora? (s/n): ").strip().lower()
+
+    if respuesta != "s":
+        print("Operacion cancelada.")
+        return None
+
+    # Pedimos los datos del cliente nuevo
+    nombre = input("Nombre completo: ").strip()
+
+    if nombre == "":
+        print("El nombre no puede estar vacio.")
+        return None
+
+    # DNI es opcional, pero si lo ingresan lo validamos
+    dni = input("DNI (opcional, Enter para omitir): ").strip()
+
+    if dni != "" and not validar_dni(dni):
+        print("DNI invalido. Debe tener entre 7 y 8 digitos numericos.")
+        return None
+
+    # Verificamos que el DNI no este ya usado por otro cliente
+    # Usamos un conjunto para guardar los DNIs registrados y comparar rapido
+    if dni != "":
+        dnis_registrados = set()                             # conjunto vacio
+        for tel in clientes:                                 # recorremos todos los clientes
+            dni_existente = clientes[tel].get("dni", "")    # obtenemos el DNI si existe
+            if dni_existente != "":
+                dnis_registrados.add(dni_existente)          # lo agregamos al conjunto
+
+        if dni in dnis_registrados:                          # si el DNI ya esta registrado
+            print("Ese DNI ya esta registrado en otro cliente.")
+            return None
+
+    direccion = input("Direccion: ").strip()
+
+    # Pedimos el tipo de cliente
+    print("Tipo de cliente:")
+    print("  1. Frecuente")
+    print("  2. Nuevo")
+    print("  3. Problematico")
+
+    opcion_tipo = input("Elegis una opcion (1/2/3): ").strip()
+
+    if opcion_tipo == "1":
+        tipo = "frecuente"
+    elif opcion_tipo == "2":
+        tipo = "nuevo"
+    elif opcion_tipo == "3":
+        tipo = "problematico"
+    else:
+        print("Opcion invalida. Se asigna tipo 'nuevo' por defecto.")
+        tipo = "nuevo"
+
+    # Creamos el cliente y lo agregamos al diccionario
+    clientes[telefono] = {
+        "nombre": nombre,
+        "dni": dni,           # puede ser string vacio si no lo ingresaron
+        "direccion": direccion,
+        "tipo": tipo,
+        "ordenes": []
     }
 
-    clientes[telefono]["ordenes"].append(nuevo_id)  # asociamos la orden al cliente
+    print("Cliente", nombre, "cargado correctamente.")
+    return telefono
 
-    print(f"Orden creada con exito. Numero de orden: {nuevo_id}")  # confirmacion al usuario
 
-    return ordenes, clientes, nuevo_id  # devolvemos las estructuras y el nuevo id
- 
-# Busca una orden por id, valida que exista, y actualiza su estado al nuevo valor ingresado.
-def cambiar_estado_orden(ordenes):
-    print("\n--- Cambiar estado de orden ---")
-    estados_validos = ["pendiente", "en_proceso", "completada", "cobrada"]  # estados posibles del sistema
+# ----------------------------------------------------------------
+# Registra una orden nueva vinculada a un cliente
+# ----------------------------------------------------------------
+def crear_orden(clientes, ordenes, ultimo_id_orden):
+    telefono = buscar_o_crear_cliente(clientes)
 
-    try:
-        id_orden = int(input("Ingrese el numero de orden: "))  # intentamos convertir a entero
-    except ValueError:  # si el usuario ingreso texto u otro valor invalido
-        print("El numero de orden debe ser un valor numerico.")
-        return ordenes  # devolvemos sin cambios
+    if telefono is None:          # si se cancelo o hubo error
+        return ultimo_id_orden    # devolvemos el contador sin cambios
 
-    if id_orden not in ordenes:  # verificamos que la orden exista
-        print(f"No se encontro una orden con el numero {id_orden}.")
-        return ordenes  # devolvemos sin cambios
+    cliente = clientes[telefono]
 
-    print(f"Orden encontrada. Estado actual: {ordenes[id_orden]['estado']}")  # mostramos el estado actual
+    # Alertamos si el cliente es problematico
+    if cliente["tipo"] == "problematico":
+        print("AVISO: este cliente esta marcado como PROBLEMATICO.")
+        confirmar = input("Queres continuar igual? (s/n): ").strip().lower()
+        if confirmar != "s":
+            print("Orden cancelada.")
+            return ultimo_id_orden
 
-    print("Estados disponibles: pendiente, en_proceso, completada, cobrada")
-    nuevo_estado = input("Ingrese el nuevo estado: ")  # pedimos el nuevo estado
+    descripcion = input("Descripcion del problema: ").strip()
 
-    if nuevo_estado not in estados_validos:  # verificamos que el estado sea valido
-        print("Estado invalido. Debe ser: pendiente, en_proceso, completada o cobrada.")
-        return ordenes  # devolvemos sin cambios
+    if descripcion == "":
+        print("La descripcion no puede estar vacia.")
+        return ultimo_id_orden
 
-    ordenes[id_orden]["estado"] = nuevo_estado  # actualizamos el estado de la orden
+    fecha_visita = input("Fecha de visita (YYYY-MM-DD) o Enter para dejar sin fecha: ").strip()
 
-    print(f"Estado actualizado correctamente a: {nuevo_estado}")  # confirmacion al usuario
+    # Generamos el ID de la orden nueva
+    ultimo_id_orden = ultimo_id_orden + 1          # incrementamos el contador
+    id_orden = "ORD-" + str(ultimo_id_orden)       # formato: ORD-1, ORD-2, etc
 
-    return ordenes  # devolvemos el diccionario actualizado
- 
-# Filtra y muestra todas las ordenes con estado pendiente o en proceso.
+    fecha_hoy = str(date.today())                  # fecha actual como string
+
+    # Creamos la orden
+    ordenes[id_orden] = {
+        "id": id_orden,
+        "telefono_cliente": telefono,              # vinculamos por telefono
+        "descripcion": descripcion,
+        "estado": "pendiente",                     # toda orden arranca como pendiente
+        "fecha_creacion": fecha_hoy,
+        "fecha_visita": fecha_visita if fecha_visita != "" else None,
+        "tecnico_id": None,                        # se asigna desde el modulo 2
+        "repuestos": [],                           # se carga desde el modulo 5
+        "monto_total": 0                           # se calcula desde el modulo 3
+    }
+
+    # Vinculamos la orden al cliente
+    clientes[telefono]["ordenes"].append(id_orden)
+
+    guardar_clientes(clientes)  # guardamos los cambios en el archivo
+
+    print("Orden", id_orden, "creada correctamente para", cliente["nombre"])
+    return ultimo_id_orden
+
+
+# ----------------------------------------------------------------
+# Avanza el estado de una orden al siguiente estado valido
+# ----------------------------------------------------------------
+def cambiar_estado_orden(ordenes, clientes):
+    id_orden = input("Ingresa el ID de la orden (ej: ORD-1): ").strip()
+
+    if id_orden not in ordenes:
+        print("No se encontro una orden con ese ID.")
+        return
+
+    orden = ordenes[id_orden]
+    estado_actual = orden["estado"]
+    indice_actual = ESTADOS_VALIDOS.index(estado_actual)  # posicion del estado actual en la lista
+
+    if indice_actual == len(ESTADOS_VALIDOS) - 1:         # si ya esta en el ultimo estado
+        print("La orden ya esta en estado", estado_actual, "y no puede avanzar mas.")
+        return
+
+    estado_nuevo = ESTADOS_VALIDOS[indice_actual + 1]     # siguiente estado en la lista
+
+    print("Estado actual:", estado_actual, "-> Nuevo estado:", estado_nuevo)
+    confirmar = input("Confirmas el cambio? (s/n): ").strip().lower()
+
+    if confirmar != "s":
+        print("Cambio cancelado.")
+        return
+
+    ordenes[id_orden]["estado"] = estado_nuevo  # aplicamos el cambio
+
+    if estado_nuevo == "cobrada":               # mensaje extra si paso a cobrada
+        telefono = orden["telefono_cliente"]
+        if telefono in clientes:
+            print("Orden cobrada para el cliente:", clientes[telefono]["nombre"])
+
+    guardar_clientes(clientes)
+    print("Estado actualizado a:", estado_nuevo)
+
+
+# ----------------------------------------------------------------
+# Muestra todas las ordenes pendientes o en proceso
+# ----------------------------------------------------------------
 def mostrar_ordenes_pendientes(ordenes, clientes):
-    print("\n--- Ordenes pendientes y en proceso ---")
+    activas = []
 
-    hay_ordenes = False  # bandera para saber si encontramos al menos una orden
+    for id_orden in ordenes:
+        orden = ordenes[id_orden]
+        if orden["estado"] == "pendiente" or orden["estado"] == "en_proceso":
+            activas.append(orden)
 
-    for id_orden, orden in ordenes.items():  # recorremos todas las ordenes
-        if orden["estado"] in ["pendiente", "en_proceso"]:  # filtramos por estado
-            hay_ordenes = True  # se encontro al menos una orden
-            nombre_cliente = clientes[orden["telefono_cliente"]]["nombre"]  # obtenemos el nombre del cliente
-            print(f"Orden #{id_orden} | Cliente: {nombre_cliente} | Estado: {orden['estado']} | Trabajo: {orden['tipo_trabajo']}")  # mostramos la orden
+    if len(activas) == 0:
+        print("No hay ordenes pendientes ni en proceso.")
+        return
 
-    if not hay_ordenes:  # si no encontramos ninguna
-        print("No hay ordenes pendientes ni en proceso.")  # avisamos al usuario
+    print("==================================================")
+    print("ORDENES ACTIVAS HOY:", len(activas))
+    print("==================================================")
+
+    for orden in activas:
+        telefono = orden["telefono_cliente"]
+
+        if telefono in clientes:
+            nombre = clientes[telefono]["nombre"]
+        else:
+            nombre = "Cliente desconocido"
+
+        print("  ID:", orden["id"], "| Cliente:", nombre, "(", telefono, ")")
+        print("  Estado:", orden["estado"], "| Visita:", orden["fecha_visita"] or "Sin fecha")
+        print("  Descripcion:", orden["descripcion"])
+        print()
 
 # ============================================================
 # MODULO 2 - GESTION DE TÉCNICOS
@@ -143,7 +331,7 @@ def generar_presupuesto(): #Modulo 5 - Generar presupuesto
 def ver_presupuestos(): #Modulo 5 - Ver presupuestos
     print("")
  
- 
+
 # ============================================================
 # MENU PRINCIPAL
 # ============================================================
@@ -181,9 +369,9 @@ def menu():
         opcion = input("Seleccione una opción: ")
 
         if opcion == "1":
-            ordenes, clientes, ultimo_id_orden = crear_orden(ordenes, clientes, ultimo_id_orden)  # actualizamos las tres estructuras
+            ultimo_id_orden = crear_orden(clientes, ordenes, ultimo_id_orden)  
         elif opcion == "2":
-            ordenes = cambiar_estado_orden(ordenes)  # actualizamos ordenes con el estado nuevo
+            cambiar_estado_orden(ordenes, clientes)  
         elif opcion == "3":
             mostrar_ordenes_pendientes(ordenes, clientes)  # pasamos ambas estructuras necesarias
         elif opcion == "4":
