@@ -265,6 +265,9 @@ def mostrar_ordenes_pendientes(ordenes, clientes):
 # MODULO 2 - GESTION DE TECNICOS
 # ============================================================
 
+#AGREGAR REASIGNAR TECNICO
+#VALIDAR TELEFONO TECNICO
+
 # Lee el archivo JSON y devuelve el diccionario de tecnicos
 def cargar_tecnicos():
     try:
