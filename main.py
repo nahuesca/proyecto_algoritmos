@@ -307,7 +307,11 @@ def registrar_tecnico(tecnicos, ultimo_id_tecnico):
     while especialidad.strip() == "": # no acepta especialidad vacia
         especialidad = input("Especialidad: ").strip()
 
-    telefono = input("Telefono del tecnico: ").strip()   # campo opcional
+    while True: # repite hasta que el telefono sea valido o el usuario lo omita
+        telefono = input("Telefono del tecnico (opcional, Enter para omitir): ").strip() # campo opcional
+        if telefono == "" or validar_telefono(telefono): # vacio es valido, o bien pasa la validacion
+            break # sale del bucle si es aceptable
+        print("Telefono invalido. Debe tener entre 8 y 15 digitos numericos.") # avisa y vuelve a pedir
 
     ultimo_id_tecnico = ultimo_id_tecnico + 1 # incrementa el contador
 
@@ -516,3 +520,4 @@ def menu():
             print("Opción inválida. Intente nuevamente.") # opcion no reconocida
 
 menu()  # punto de entrada del programa
+
