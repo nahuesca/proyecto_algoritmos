@@ -30,6 +30,7 @@ from validaciones import validar_telefono, validar_dni  # funciones de validacio
 
 ARCHIVO_CLIENTES = "clientes.json"  # nombre del archivo donde se guardan los clientes
 ARCHIVO_TECNICOS = "tecnicos.json"  # nombre del archivo donde se guardan los tecnicos
+ARCHIVO_PAGOS = "pagos.json"  # nombre del archivo donde se guardan los pagos
 
 ESTADOS_VALIDOS = ["pendiente", "en_proceso", "completada", "cobrada"]  # estados posibles en orden de avance
 
@@ -142,11 +143,13 @@ def buscar_o_crear_cliente(clientes):
 # ================================================================
 # Registra una orden nueva vinculada a un cliente
 # ================================================================
-def crear_orden(clientes, ordenes, ultimo_id_orden):
+def crear_orden(clientes, ordenes, ultimo_id_orden, pagos):
     telefono = buscar_o_crear_cliente(clientes) # obtiene o crea el cliente
 
     if telefono is None: # si se cancelo o hubo error
         return ultimo_id_orden # devuelve el contador sin cambios
+
+    alerta_deuda(telefono, pagos, clientes) # avisa si el cliente tiene deuda pendiente
 
     cliente = clientes[telefono] # referencia al cliente encontrado
 
@@ -410,18 +413,282 @@ def finalizar_trabajo_tecnico(id_tecnico, tecnicos, ordenes):
     guardar_tecnicos(tecnicos)
     print("El tecnico", tecnicos[id_tecnico]["nombre"], "finalizo su orden y esta disponible.")
 
-# ============================================================
+# ================================================================
 # MODULO 3 - CONTROL DE PAGOS Y DEUDAS
-# ============================================================
+# Funciones:
+#   cargar_pagos()                - lee el archivo JSON de pagos
+#   guardar_pagos()               - guarda los pagos en el archivo JSON
+#   registrar_pago()              - registra o agrega un pago a una orden
+#   ver_deudores()                - lista clientes con saldo pendiente
+#   ver_historial_pagos_cliente() - muestra pagos de un cliente
+#   alerta_deuda()                - avisa si el cliente tiene deuda
+# ================================================================
 
-# Registra un pago asociado a una orden
-def registrar_pago():
-    print("")  # pendiente de implementacion
+# Lee el archivo JSON y devuelve el diccionario de pagos
+# Si no existe o esta corrupto, devuelve diccionario vacio
+def cargar_pagos():
+    try:
+        archivo = open(ARCHIVO_PAGOS, "r", encoding="UTF-8")   # abrimos el archivo en modo lectura
+        contenido = archivo.read()  # leemos todo el texto del archivo
+        archivo.close() # cerramos el archivo
+        pagos = json.loads(contenido)  # convertimos el texto JSON a diccionario
+        return pagos # devolvemos el diccionario de pagos
+    except FileNotFoundError:
+        return {} # si no existe el archivo devolvemos vacio
+    except json.JSONDecodeError:
+        print("Error: el archivo de pagos esta corrupto.")  # avisamos que el archivo esta corrupto
+        return {} # devolvemos vacio para poder seguir
 
 
-# Muestra el estado de pagos y deudas de los clientes
-def ver_estado_pagos():
-    print("")  # pendiente de implementacion
+# Guarda el diccionario de pagos en el archivo JSON
+def guardar_pagos(pagos):
+    try:
+        archivo = open(ARCHIVO_PAGOS, "w", encoding="UTF-8")  # abrimos en modo escritura
+        contenido = json.dumps(pagos, indent=4, ensure_ascii=False)  # convertimos a texto JSON prolijo
+        archivo.write(contenido)  # escribimos el contenido en el archivo
+        archivo.close()  # cerramos el archivo
+    except OSError:
+        print("Error: no se pudieron guardar los pagos.")  # avisamos si no se pudo escribir
+
+
+# Registra un pago nuevo o agrega un pago parcial a una orden existente
+# Si la orden no tiene pago registrado crea la deuda, si ya tiene agrega una transaccion
+def registrar_pago(pagos, ordenes, clientes):
+    id_orden = input("Ingresa el ID de la orden (ej: ORD-1): ").strip()     # pedimos el ID de la orden
+
+    if id_orden not in ordenes:  # verificamos que la orden exista
+        print("No se encontro una orden con ese ID.")  # avisamos si no existe
+        return  # salimos de la funcion
+
+    orden = ordenes[id_orden] # obtenemos los datos de la orden
+
+    if orden["estado"] == "pendiente" or orden["estado"] == "en_proceso":   # si la orden no esta terminada
+        print("La orden todavia no esta completada. No se puede registrar pago aun.")  # avisamos
+        return  # salimos de la funcion
+
+    if id_orden in pagos: # si ya tiene pago registrado
+        pago = pagos[id_orden]  # obtenemos el pago existente
+
+        if pago["saldo"] <= 0:  # si ya esta todo pagado
+            print("Esta orden ya esta totalmente pagada.") # avisamos
+            return  # salimos de la funcion
+
+        print("Saldo pendiente: $", pago["saldo"]) # mostramos cuanto falta pagar
+
+        monto_input = input("Cuanto paga ahora ($): ").strip() # pedimos el monto del pago
+
+        try:
+            monto = float(monto_input) # convertimos el texto a decimal
+        except ValueError:
+            print("Monto invalido. Debe ser un numero.")  # avisamos si no es numero
+            return   # salimos de la funcion
+
+        if monto <= 0: # si el monto no es positivo
+            print("El monto debe ser mayor a cero.") # avisamos
+            return  # salimos de la funcion
+
+        if monto > pago["saldo"]: # si paga mas de lo que debe
+            print("El monto supera el saldo pendiente: $", pago["saldo"])   # avisamos
+            return # salimos de la funcion
+
+        print("Metodo de pago:") # mostramos las opciones
+        print("  1. Efectivo") # opcion efectivo
+        print("  2. Transferencia") # opcion transferencia
+        opcion = input("Elegis una opcion (1/2): ").strip() # pedimos la opcion
+
+        if opcion == "1": # si eligio efectivo
+            metodo = "efectivo"  # guardamos el metodo
+        elif opcion == "2": # si eligio transferencia
+            metodo = "transferencia"  # guardamos el metodo
+        else:
+            metodo = "efectivo" # si no es valido usamos efectivo
+            print("Opcion invalida. Se registra como efectivo.") # avisamos
+
+        fecha_hoy = str(date.today()) # obtenemos la fecha de hoy como texto
+
+        transaccion = {  # creamos el diccionario de la transaccion
+            "monto": monto, # cuanto pago
+            "metodo": metodo, # como pago
+            "fecha": fecha_hoy # cuando pago
+        }
+
+        pagos[id_orden]["transacciones"].append(transaccion) # agregamos la transaccion a la lista
+        pagos[id_orden]["saldo"] = pago["saldo"] - monto # actualizamos el saldo restante
+
+        if pagos[id_orden]["saldo"] == 0: # si el saldo llego a cero
+            ordenes[id_orden]["estado"] = "cobrada" # cambiamos el estado de la orden
+            print("Pago total. La orden pasa a estado COBRADA.") # informamos al usuario
+        else:
+            print("Pago parcial registrado. Saldo restante: $", pagos[id_orden]["saldo"])  # mostramos saldo restante
+
+        guardar_pagos(pagos)   # guardamos los cambios en el archivo
+        return  # salimos de la funcion
+
+    # si llegamos aca la orden no tiene pago registrado todavia, creamos la deuda
+    monto_input = input("Monto total del trabajo ($): ").strip()  # pedimos el monto total de la deuda
+
+    try:
+        monto_total = float(monto_input)  # convertimos el texto a decimal
+    except ValueError:
+        print("Monto invalido. Debe ser un numero.") # avisamos si no es numero
+        return  # salimos de la funcion
+
+    if monto_total <= 0: # si el monto no es positivo
+        print("El monto debe ser mayor a cero.") # avisamos
+        return # salimos de la funcion
+
+    pago_inmediato = input("El cliente pago algo ahora? (s/n): ").strip().lower()  # preguntamos si pago algo ya
+
+    transacciones = [] # lista vacia de transacciones
+    saldo = monto_total  # el saldo arranca igual al total
+
+    if pago_inmediato == "s":   # si pago algo ahora
+        monto_ahora_input = input("Cuanto pago ahora ($): ").strip() # pedimos cuanto pago
+
+        try:
+            monto_ahora = float(monto_ahora_input)  # convertimos a decimal
+        except ValueError:
+            print("Monto invalido. Se registra la deuda sin pago inicial.")  # avisamos
+            monto_ahora = 0 # dejamos el pago inicial en cero
+
+        if monto_ahora > 0 and monto_ahora <= monto_total:# si el monto es valido
+            print("Metodo de pago:") # mostramos las opciones
+            print("  1. Efectivo") # opcion efectivo
+            print("  2. Transferencia") # opcion transferencia
+            opcion = input("Elegis una opcion (1/2): ").strip() # pedimos la opcion
+
+            if opcion == "1": # si eligio efectivo
+                metodo = "efectivo"  # guardamos el metodo
+            elif opcion == "2": # si eligio transferencia
+                metodo = "transferencia"  # guardamos el metodo
+            else:
+                metodo = "efectivo" # si no es valido usamos efectivo
+                print("Opcion invalida. Se registra como efectivo.")  # avisamos
+
+            fecha_hoy = str(date.today()) # obtenemos la fecha de hoy
+
+            transaccion = {   # creamos el diccionario de la transaccion
+                "monto": monto_ahora,  # cuanto pago
+                "metodo": metodo,  # como pago
+                "fecha": fecha_hoy  # cuando pago
+            }
+            transacciones.append(transaccion)  # agregamos la transaccion a la lista
+            saldo = monto_total - monto_ahora # recalculamos el saldo restante
+
+    pagos[id_orden] = {  # creamos el registro de pago nuevo
+        "id_orden": id_orden, # vinculo con la orden
+        "telefono_cliente": orden["telefono_cliente"],# telefono para identificar al cliente
+        "monto_total": monto_total, # deuda original completa
+        "saldo": saldo, # lo que falta pagar
+        "transacciones": transacciones # lista de pagos recibidos hasta ahora
+    }
+
+    if saldo == 0: # si quedo todo pagado
+        ordenes[id_orden]["estado"] = "cobrada" # cambiamos el estado de la orden
+        print("Pago total registrado. La orden pasa a estado COBRADA.")      # informamos al usuario
+    else:
+        print("Deuda registrada. Saldo pendiente: $", saldo) # mostramos el saldo que queda
+
+    guardar_pagos(pagos) # guardamos los cambios en el archivo
+
+
+# Lista todos los clientes que tienen saldo pendiente mayor a cero
+def ver_deudores(pagos, clientes):
+    telefonos_vistos = set()  # conjunto para no repetir clientes
+    hay_deudores = False  # bandera para saber si hay deudores
+
+    print("==================================================")
+    print("CLIENTES CON DEUDA PENDIENTE")
+    print("==================================================")
+
+    for id_orden in pagos: # recorremos todos los pagos registrados
+        pago = pagos[id_orden]  # obtenemos el pago actual
+
+        if pago["saldo"] <= 0: # si no tiene saldo pendiente
+            continue  # pasamos al siguiente sin mostrar
+
+        telefono = pago["telefono_cliente"] # obtenemos el telefono del cliente
+
+        if telefono in clientes: # si el cliente existe en el sistema
+            nombre = clientes[telefono]["nombre"] # obtenemos el nombre
+            tipo = clientes[telefono]["tipo"] # obtenemos el tipo de cliente
+        else:
+            nombre = "Cliente desconocido" # nombre generico si no existe
+            tipo = "-"  # tipo desconocido
+
+        if tipo == "nuevo" or tipo == "problematico": # si es cliente de riesgo
+            print("  ALERTA - Cliente", tipo.upper(), "con deuda:") # mostramos alerta especial
+
+        print("  Orden:", id_orden, "| Cliente:", nombre, "(", telefono, ")")  # mostramos la orden y el cliente
+        print("  Saldo pendiente: $", pago["saldo"]) # mostramos cuanto debe
+        print() # linea en blanco entre registros
+
+        telefonos_vistos.add(telefono)# agregamos el telefono al conjunto
+        hay_deudores = True  # marcamos que hay al menos un deudor
+
+    if not hay_deudores: # si no encontramos ninguno
+        print("  No hay clientes con deuda pendiente.")# avisamos
+
+    print("Total de clientes con deuda:", len(telefonos_vistos)) # mostramos el total sin repetidos
+
+
+# Muestra el historial completo de pagos de un cliente buscado por telefono
+def ver_historial_pagos_cliente(pagos, clientes):
+    telefono = input("Ingresa el telefono del cliente: ").strip() # pedimos el telefono
+
+    if telefono not in clientes:  # si no existe en el sistema
+        print("No se encontro un cliente con ese telefono.") # avisamos
+        return   # salimos de la funcion
+
+    nombre = clientes[telefono]["nombre"] # obtenemos el nombre del cliente
+
+    print("==================================================")
+    print("HISTORIAL DE PAGOS —", nombre)
+    print("==================================================")
+
+    hay_pagos = False  # bandera para saber si hay pagos
+
+    for id_orden in pagos: # recorremos todos los pagos
+        pago = pagos[id_orden] # obtenemos el pago actual
+
+        if pago["telefono_cliente"] != telefono:   # si no es de este cliente
+            continue  # pasamos al siguiente
+
+        hay_pagos = True  # encontramos al menos un pago
+
+        print("  Orden:", id_orden) # mostramos el ID de la orden
+        print("  Monto total: $", pago["monto_total"]) # mostramos la deuda original
+        print("  Saldo restante: $", pago["saldo"])  # mostramos lo que falta pagar
+
+        if len(pago["transacciones"]) == 0: # si no hay transacciones todavia
+            print("  Sin pagos recibidos todavia.") # avisamos
+        else:
+            print("  Pagos recibidos:")  # titulo de la lista de pagos
+            for transaccion in pago["transacciones"]:  # recorremos cada pago recibido
+                print("    [", transaccion["fecha"], "] $", transaccion["monto"], "-", transaccion["metodo"])  # mostramos el detalle
+
+        print()  # linea en blanco entre ordenes
+
+    if not hay_pagos:   # si no encontramos ninguno
+        print("  Este cliente no tiene pagos registrados.") # avisamos
+
+
+# Verifica si un cliente tiene deuda y muestra una alerta
+# La llama el modulo 1 antes de crear una orden nueva
+def alerta_deuda(telefono, pagos, clientes):
+    deuda_total = 0  # acumulador de la deuda total
+
+    for id_orden in pagos: # recorremos todos los pagos
+        pago = pagos[id_orden] # obtenemos el pago actual
+        if pago["telefono_cliente"] == telefono: # si es de este cliente
+            deuda_total = deuda_total + pago["saldo"]  # sumamos el saldo pendiente
+
+    if deuda_total > 0:  # si tiene deuda
+        tipo = clientes[telefono]["tipo"] # obtenemos el tipo de cliente
+        print("AVISO: este cliente tiene deuda pendiente de $", deuda_total) # mostramos el aviso
+
+        if tipo == "nuevo" or tipo == "problematico": # si es cliente de riesgo
+            print("ATENCION: el cliente es", tipo.upper(), "y tiene deuda. Se recomienda no continuar.")  # alerta fuerte
 
 
 # ============================================================
@@ -463,7 +730,7 @@ def menu():
     ordenes = {}  # diccionario de ordenes, vacio al arrancar
     clientes = cargar_clientes()  # carga clientes desde archivo al iniciar
     tecnicos = cargar_tecnicos() # carga tecnicos desde archivo al iniciar
-    pagos = {} # diccionario de pagos, vacio al arrancar
+    pagos = cargar_pagos() # carga pagos desde archivo al iniciar
     presupuestos = {} # diccionario de presupuestos, vacio al arrancar
 
     while opcion != "0": # repite hasta que el usuario elija salir
@@ -491,7 +758,7 @@ def menu():
         opcion = input("Seleccione una opción: ") # lee la opcion del usuario
 
         if opcion == "1":  # crear orden de servicio
-            ultimo_id_orden = crear_orden(clientes, ordenes, ultimo_id_orden)
+            ultimo_id_orden = crear_orden(clientes, ordenes, ultimo_id_orden, pagos)
         elif opcion == "2": # cambiar estado de una orden
             cambiar_estado_orden(ordenes, clientes)
         elif opcion == "3": # ver ordenes pendientes
@@ -503,9 +770,9 @@ def menu():
         elif opcion == "6":
             asignar_tecnico_a_orden(tecnicos, ordenes)
         elif opcion == "7":   # registrar un pago
-            registrar_pago()
-        elif opcion == "8":  # ver pagos y deudas
-            ver_estado_pagos()
+            registrar_pago(pagos, ordenes, clientes)
+        elif opcion == "8":  # ver clientes con deuda pendiente
+            ver_deudores(pagos, clientes)
         elif opcion == "9":  # buscar un cliente
             buscar_cliente()
         elif opcion == "10":   # ver historial de un cliente
