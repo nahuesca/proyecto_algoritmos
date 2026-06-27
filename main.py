@@ -32,6 +32,9 @@ from validaciones import validar_telefono, validar_dni  # funciones de validacio
 ARCHIVO_CLIENTES = "clientes.json"  # nombre del archivo donde se guardan los clientes
 ARCHIVO_TECNICOS = "tecnicos.json"  # nombre del archivo donde se guardan los tecnicos
 ARCHIVO_PAGOS = "pagos.json"  # nombre del archivo donde se guardan los pagos
+ARCHIVO_PRESUPUESTOS = "presupuestos.json"  # nombre del archivo donde se guardan los presupuestos
+MANO_OBRA_SIMPLE = 5000.0  # costo fijo de mano de obra para trabajos simples
+MANO_OBRA_COMPLICADO = 12000.0  # costo fijo de mano de obra para trabajos complicados
 
 ESTADOS_VALIDOS = ["pendiente", "en_proceso", "completada", "cobrada"]  # estados posibles en orden de avance
 
@@ -957,18 +960,236 @@ def ver_historial_cliente(clientes, ordenes, pagos, tecnicos):
         print() # linea en blanco entre ordenes
 
 
-# ============================================================
+# ================================================================
 # MODULO 5 - PRESUPUESTOS Y COSTOS
-# ============================================================
+# Variables: presupuestos, ordenes, clientes, tecnicos, pagos
+# Funciones:
+#   cargar_presupuestos()        - lee el archivo JSON de presupuestos
+#   guardar_presupuestos()       - guarda los presupuestos en el archivo JSON
+#   calcular_total_presupuesto() - suma repuestos y mano de obra (funcion pura, testeable)
+#   generar_presupuesto()        - arma un presupuesto para una orden
+#   ver_presupuestos()           - lista todos los presupuestos registrados
+#   calcular_comisiones()        - calcula lo que le corresponde a cada tecnico en el mes
+# ================================================================
 
-# Genera un presupuesto para una orden
-def generar_presupuesto():
-    print("")  # pendiente de implementacion
+# Lee el archivo JSON y devuelve el diccionario de presupuestos
+# Si no existe o esta corrupto, devuelve diccionario vacio
+def cargar_presupuestos():
+    try:
+        archivo = open(ARCHIVO_PRESUPUESTOS, "r", encoding="UTF-8")  # abrimos en lectura
+        contenido = archivo.read()  # leemos el contenido
+        archivo.close()  # cerramos el archivo
+        presupuestos = json.loads(contenido)  # convertimos a diccionario
+        return presupuestos  # devolvemos el diccionario
+    except FileNotFoundError:
+        return {}  # si no existe devolvemos vacio
+    except json.JSONDecodeError:
+        print("Error: el archivo de presupuestos esta corrupto.")  # avisamos
+        return {}  # devolvemos vacio para poder seguir
 
 
-# Lista todos los presupuestos registrados
-def ver_presupuestos():
-    print("")  # pendiente de implementacion
+# Guarda el diccionario de presupuestos en el archivo JSON
+def guardar_presupuestos(presupuestos):
+    try:
+        archivo = open(ARCHIVO_PRESUPUESTOS, "w", encoding="UTF-8")  # abrimos en escritura
+        contenido = json.dumps(presupuestos, indent=4, ensure_ascii=False)  # convertimos a JSON
+        archivo.write(contenido)  # escribimos
+        archivo.close()  # cerramos
+    except OSError:
+        print("Error: no se pudieron guardar los presupuestos.")  # avisamos si fallo
+
+
+# Suma los precios de los repuestos y agrega el costo de mano de obra
+# Funcion pura sin input(): recibe datos y devuelve el total, se puede testear con pytest
+def calcular_total_presupuesto(repuestos, mano_de_obra):
+    total = mano_de_obra  # arrancamos con el costo de mano de obra
+    for repuesto in repuestos:  # recorremos cada repuesto
+        total = total + repuesto["precio"]  # sumamos el precio del repuesto
+    return total  # devolvemos el total calculado
+
+
+# Arma un presupuesto para una orden: tipo de trabajo, repuestos y total
+# Permite ajuste manual del total y registra si el cliente lo aprobo o rechazo
+def generar_presupuesto(presupuestos, ordenes, clientes):
+    id_orden = input("Ingresa el ID de la orden (ej: ORD-1): ").strip()  # pedimos el ID
+
+    if id_orden not in ordenes:  # si la orden no existe
+        print("No se encontro una orden con ese ID.")  # avisamos
+        return  # salimos
+
+    if id_orden in presupuestos and presupuestos[id_orden]["estado"] == "aprobado":  # si ya tiene uno aprobado
+        print("Esta orden ya tiene un presupuesto aprobado.")  # avisamos
+        return  # salimos
+
+    orden = ordenes[id_orden]  # referencia a la orden
+    telefono = orden["telefono_cliente"]  # telefono del cliente
+
+    if telefono in clientes:  # si el cliente existe
+        nombre_cliente = clientes[telefono]["nombre"]  # obtenemos el nombre
+    else:
+        nombre_cliente = "Desconocido"  # nombre generico si no existe
+
+    print("Orden:", id_orden, "| Cliente:", nombre_cliente)  # mostramos info
+    print("Descripcion:", orden["descripcion"])  # mostramos la descripcion
+
+    print("Tipo de trabajo:")  # mostramos opciones de tipo
+    print("  1. Simple ($ ", MANO_OBRA_SIMPLE, ")")  # opcion simple con costo
+    print("  2. Complicado ($ ", MANO_OBRA_COMPLICADO, ")")  # opcion complicado con costo
+    tipo_input = input("Elegis una opcion (1/2): ").strip()  # pedimos el tipo
+
+    if tipo_input == "1":  # si eligio simple
+        tipo_trabajo = "simple"  # guardamos el tipo
+        mano_de_obra = MANO_OBRA_SIMPLE  # asignamos el costo
+    elif tipo_input == "2":  # si eligio complicado
+        tipo_trabajo = "complicado"  # guardamos el tipo
+        mano_de_obra = MANO_OBRA_COMPLICADO  # asignamos el costo
+    else:
+        print("Opcion invalida.")  # avisamos
+        return  # salimos
+
+    print("Carga los repuestos (Enter sin nombre para terminar):")  # instruccion
+    repuestos = []  # lista vacia de repuestos
+
+    while True:  # bucle para cargar repuestos uno por uno
+        nombre_rep = input("  Nombre del repuesto: ").strip()  # pedimos el nombre
+
+        if nombre_rep == "":  # si no escribio nada
+            break  # terminamos la carga
+
+        precio_input = input("  Precio ($): ").strip()  # pedimos el precio
+
+        try:
+            precio = float(precio_input)  # convertimos a decimal
+        except ValueError:
+            print("  Precio invalido. Repuesto no agregado.")  # avisamos
+            continue  # volvemos a pedir
+
+        if precio < 0:  # si el precio es negativo
+            print("  El precio no puede ser negativo. Repuesto no agregado.")  # avisamos
+            continue  # volvemos a pedir
+
+        repuesto = {"nombre": nombre_rep, "precio": precio}  # creamos el repuesto
+        repuestos.append(repuesto)  # lo agregamos a la lista
+        print("  Repuesto agregado.")  # confirmamos
+
+    total_calculado = calcular_total_presupuesto(repuestos, mano_de_obra)  # calculamos el total
+
+    print("Total calculado: $", total_calculado)  # mostramos el resultado
+    ajuste = input("Queres ajustar el total manualmente? (s/n): ").strip().lower()  # preguntamos
+
+    if ajuste == "s":  # si quiere ajustar
+        ajuste_input = input("Ingresa el total final ($): ").strip()  # pedimos el nuevo total
+        try:
+            total_final = float(ajuste_input)  # convertimos a decimal
+        except ValueError:
+            print("Monto invalido. Se usa el total calculado.")  # avisamos
+            total_final = total_calculado  # usamos el calculado como fallback
+    else:
+        total_final = total_calculado  # usamos el calculado sin cambios
+
+    aprobado = input("El cliente aprobo el presupuesto? (s/n): ").strip().lower()  # preguntamos
+
+    if aprobado == "s":  # si aprobo
+        estado = "aprobado"  # marcamos como aprobado
+        print("Presupuesto aprobado. Total: $", total_final)  # confirmamos
+    else:
+        estado = "rechazado"  # marcamos como rechazado
+        print("Presupuesto rechazado y registrado.")  # confirmamos
+
+    presupuestos[id_orden] = {  # creamos el registro del presupuesto
+        "id_orden": id_orden,  # vinculo con la orden
+        "tipo_trabajo": tipo_trabajo,  # simple o complicado
+        "mano_de_obra": mano_de_obra,  # costo de mano de obra usado
+        "repuestos": repuestos,  # lista de repuestos con precios
+        "total_calculado": total_calculado,  # total antes del ajuste
+        "total_final": total_final,  # total definitivo
+        "estado": estado  # aprobado o rechazado
+    }
+
+    guardar_presupuestos(presupuestos)  # guardamos en archivo
+
+
+# Lista todos los presupuestos con su estado, monto y detalle de repuestos
+def ver_presupuestos(presupuestos, ordenes, clientes):
+    if len(presupuestos) == 0:  # si no hay presupuestos
+        print("No hay presupuestos registrados.")  # avisamos
+        return  # salimos
+
+    print("==================================================")
+    print("PRESUPUESTOS REGISTRADOS")
+    print("==================================================")
+
+    for id_orden in presupuestos:  # recorremos todos los presupuestos
+        presupuesto = presupuestos[id_orden]  # referencia al presupuesto
+
+        nombre_cliente = "Desconocido"  # valor por defecto
+        if id_orden in ordenes:  # si la orden existe
+            telefono = ordenes[id_orden]["telefono_cliente"]  # telefono del cliente
+            if telefono in clientes:  # si el cliente existe
+                nombre_cliente = clientes[telefono]["nombre"]  # obtenemos el nombre
+
+        print("  Orden:", id_orden, "| Cliente:", nombre_cliente)  # ID y cliente
+        print("  Tipo:", presupuesto["tipo_trabajo"], "| Estado:", presupuesto["estado"].upper())  # tipo y estado
+        print("  Total: $", presupuesto["total_final"])  # total final
+
+        if len(presupuesto["repuestos"]) > 0:  # si tiene repuestos cargados
+            print("  Repuestos:")  # titulo de la lista
+            for rep in presupuesto["repuestos"]:  # recorremos los repuestos
+                print("    -", rep["nombre"], "$", rep["precio"])  # mostramos cada uno
+
+        print()  # linea en blanco entre presupuestos
+
+
+# Calcula la comision de cada tecnico segun sus ordenes cobradas en un mes dado
+# El porcentaje se ingresa manualmente para cada tecnico
+def calcular_comisiones(tecnicos, ordenes, pagos):
+    mes_input = input("Mes a calcular (YYYY-MM, ej: 2025-06) o Enter para el mes actual: ").strip()  # pedimos el mes
+
+    if mes_input == "":  # si no ingreso nada
+        mes_input = str(date.today())[:7]  # usamos el mes actual en formato YYYY-MM
+
+    print("==================================================")
+    print("COMISIONES DEL MES:", mes_input)
+    print("==================================================")
+
+    if len(tecnicos) == 0:  # si no hay tecnicos registrados
+        print("No hay tecnicos registrados en el sistema.")  # avisamos
+        return  # salimos
+
+    for id_tec in tecnicos:  # recorremos todos los tecnicos
+        tecnico = tecnicos[id_tec]  # referencia al tecnico
+        total_cobrado = 0  # acumulador de lo cobrado por este tecnico en el mes
+
+        for id_orden in ordenes:  # recorremos todas las ordenes
+            orden = ordenes[id_orden]  # referencia a la orden
+
+            if orden["tecnico_id"] != id_tec:  # si no es de este tecnico
+                continue  # pasamos a la siguiente
+
+            if orden["estado"] != "cobrada":  # si la orden no esta cobrada
+                continue  # pasamos a la siguiente
+
+            if not orden["fecha_creacion"].startswith(mes_input):  # si no es del mes pedido
+                continue  # pasamos a la siguiente
+
+            if id_orden in pagos:  # si tiene pago registrado
+                total_cobrado = total_cobrado + pagos[id_orden]["monto_total"]  # sumamos el monto
+
+        print("  Tecnico:", tecnico["nombre"])  # nombre del tecnico
+        print("  Total en ordenes cobradas del mes: $", total_cobrado)  # total del mes
+
+        if total_cobrado > 0:  # si hay algo que calcular
+            porc_input = input("  Porcentaje de comision (%): ").strip()  # pedimos el porcentaje
+            try:
+                porcentaje = float(porc_input)  # convertimos a decimal
+                comision = total_cobrado * porcentaje / 100  # calculamos la comision
+                print("  Comision a pagar: $", comision)  # mostramos el resultado
+            except ValueError:
+                print("  Porcentaje invalido. Comision no calculada.")  # avisamos si no es numero
+        else:
+            print("  Sin ordenes cobradas este mes.")  # informamos si no hay
+
+        print()  # linea en blanco entre tecnicos
 
 
 # ============================================================
@@ -983,7 +1204,7 @@ def menu():
     clientes = cargar_clientes()  # carga clientes desde archivo al iniciar
     tecnicos = cargar_tecnicos() # carga tecnicos desde archivo al iniciar
     pagos = cargar_pagos() # carga pagos desde archivo al iniciar
-    presupuestos = {} # diccionario de presupuestos, vacio al arrancar
+    presupuestos = cargar_presupuestos() # carga presupuestos desde archivo al iniciar
 
     while opcion != "0": # repite hasta que el usuario elija salir
         print("\n========== SISTEMA DE GESTIÓN - SERVICIOS TÉCNICOS ==========")
@@ -1004,6 +1225,7 @@ def menu():
         print("--- Presupuestos ---")
         print("11. Generar presupuesto")
         print("12. Ver presupuestos")
+        print("13. Calcular comisiones de tecnicos")
         print("0. Salir")
         print("==============================================================")
 
@@ -1030,9 +1252,11 @@ def menu():
         elif opcion == "10":   # ver historial de un cliente
             ver_historial_cliente(clientes, ordenes, pagos, tecnicos)
         elif opcion == "11":  # generar un presupuesto
-            generar_presupuesto()
+            generar_presupuesto(presupuestos, ordenes, clientes)
         elif opcion == "12": # ver presupuestos existentes
-            ver_presupuestos()
+            ver_presupuestos(presupuestos, ordenes, clientes)
+        elif opcion == "13": # calcular comisiones de tecnicos
+            calcular_comisiones(tecnicos, ordenes, pagos)
         elif opcion == "0":  # salir del sistema
             print("Saliendo del sistema...")
         else:
