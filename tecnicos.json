@@ -1,9 +1,0 @@
-{
-    "1": {
-        "nombre": "manuel olivari",
-        "especialidad": "Aire acondicionado",
-        "telefono": "113443444",
-        "disponible": true,
-        "ordenes_asignadas": []
-    }
-}
