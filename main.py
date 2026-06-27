@@ -30,6 +30,7 @@ from datetime import date  # para registrar la fecha de creacion
 from validaciones import validar_telefono, validar_dni  # funciones de validacion compartidas
 
 ARCHIVO_CLIENTES = "clientes.json"  # nombre del archivo donde se guardan los clientes
+ARCHIVO_ORDENES = "ordenes.json"  # nombre del archivo donde se guardan las ordenes
 ARCHIVO_TECNICOS = "tecnicos.json"  # nombre del archivo donde se guardan los tecnicos
 ARCHIVO_PAGOS = "pagos.json"  # nombre del archivo donde se guardan los pagos
 ARCHIVO_PRESUPUESTOS = "presupuestos.json"  # nombre del archivo donde se guardan los presupuestos
@@ -68,6 +69,32 @@ def guardar_clientes(clientes):
         print("Datos guardados correctamente.") # confirma al usuario
     except OSError:
         print("Error: no se pudieron guardar los datos.") # error de permisos o disco lleno
+
+
+# Lee el archivo JSON y devuelve el diccionario de ordenes
+# Si no existe o esta corrupto, devuelve diccionario vacio
+def cargar_ordenes():
+    try:
+        archivo = open(ARCHIVO_ORDENES, "r", encoding="UTF-8")  # abre en lectura
+        contenido = archivo.read()  # lee el contenido
+        archivo.close()  # cierra el archivo
+        return json.loads(contenido)  # convierte a diccionario y devuelve
+    except FileNotFoundError:
+        return {}  # si no existe devolvemos vacio
+    except json.JSONDecodeError:
+        print("Error: el archivo de ordenes esta corrupto.")  # avisamos
+        return {}  # devolvemos vacio para poder seguir
+
+
+# Guarda el diccionario de ordenes en el archivo JSON
+def guardar_ordenes(ordenes):
+    try:
+        archivo = open(ARCHIVO_ORDENES, "w", encoding="UTF-8")  # abre en escritura
+        contenido = json.dumps(ordenes, indent=4, ensure_ascii=False)  # convierte a JSON prolijo
+        archivo.write(contenido)  # escribe el contenido
+        archivo.close()  # cierra el archivo
+    except OSError:
+        print("Error: no se pudieron guardar las ordenes.")  # avisamos si fallo
 
 # ================================================================
 # Busca un cliente por telefono
@@ -192,8 +219,7 @@ def crear_orden(clientes, ordenes, ultimo_id_orden, pagos):
     clientes[telefono]["ordenes"].append(id_orden) # vincula la orden al cliente
 
     guardar_clientes(clientes) # guarda los cambios en el archivo
-
-    print("Orden", id_orden, "creada correctamente para", cliente["nombre"])
+    guardar_ordenes(ordenes) # guarda la orden nueva en el archivo
     return ultimo_id_orden   # devuelve el contador actualizado
 
 
@@ -232,6 +258,7 @@ def cambiar_estado_orden(ordenes, clientes):
             print("Orden cobrada para el cliente:", clientes[telefono]["nombre"])
 
     guardar_clientes(clientes) # guarda los cambios
+    guardar_ordenes(ordenes) # guarda el nuevo estado de la orden
     print("Estado actualizado a:", estado_nuevo)
 
 
@@ -396,6 +423,7 @@ def asignar_tecnico_a_orden(tecnicos, ordenes):
         ordenes[id_orden]["estado"] = "en_proceso" # avanza el estado
 
         guardar_tecnicos(tecnicos)
+        guardar_ordenes(ordenes) # guarda el tecnico asignado y el nuevo estado
         print("Tecnico", tecnicos[id_tecnico]["nombre"], "asignado a orden", id_orden)
     else:
         print("Error: Tecnico u orden no encontrados.")
@@ -458,6 +486,7 @@ def reasignar_tecnico_a_orden(tecnicos, ordenes):
     ordenes[id_orden]["tecnico_id"] = id_tecnico_nuevo
 
     guardar_tecnicos(tecnicos)  # guarda los cambios en el archivo
+    guardar_ordenes(ordenes)  # guarda el nuevo tecnico asignado en la orden
 
     nombre_nuevo = tecnicos[id_tecnico_nuevo]["nombre"]  # nombre del tecnico nuevo para el mensaje
     print("Orden", id_orden, "reasignada de", nombre_anterior, "a", nombre_nuevo)
@@ -479,6 +508,7 @@ def finalizar_trabajo_tecnico(id_tecnico, tecnicos, ordenes):
             ordenes[id_ultima_orden]["estado"] = "completada"  # cambia el estado, eso lo libera
 
     guardar_tecnicos(tecnicos)
+    guardar_ordenes(ordenes)  # guarda el estado completada de la orden
     print("El tecnico", tecnicos[id_tecnico]["nombre"], "finalizo su orden y esta disponible.")
 
 # ================================================================
@@ -590,6 +620,7 @@ def registrar_pago(pagos, ordenes, clientes):
             print("Pago parcial registrado. Saldo restante: $", pagos[id_orden]["saldo"])  # mostramos saldo restante
 
         guardar_pagos(pagos)   # guardamos los cambios en el archivo
+        guardar_ordenes(ordenes)  # guarda el estado cobrada si corresponde
         return  # salimos de la funcion
 
     # si llegamos aca la orden no tiene pago registrado todavia, creamos la deuda
@@ -658,9 +689,7 @@ def registrar_pago(pagos, ordenes, clientes):
         print("Deuda registrada. Saldo pendiente: $", saldo) # mostramos el saldo que queda
 
     guardar_pagos(pagos) # guardamos los cambios en el archivo
-
-
-# Lista todos los clientes que tienen saldo pendiente mayor a cero
+    guardar_ordenes(ordenes)  # guarda el estado cobrada si corresponde
 def ver_deudores(pagos, clientes):
     telefonos_vistos = set()  # conjunto para no repetir clientes
     hay_deudores = False  # bandera para saber si hay deudores
@@ -1209,7 +1238,15 @@ def menu():
         ultimo_id_tecnico = max(tecnicos) # arranca desde el ID mas alto existente
     else:
         ultimo_id_tecnico = 0 # si no hay tecnicos arranca en 0
-    ordenes = {}  # diccionario de ordenes, vacio al arrancar
+    ordenes = cargar_ordenes()  # carga ordenes desde archivo al iniciar
+    ultimo_id_orden = 0  # contador de ordenes, arranca en 0
+    for id_ord in ordenes:  # recorremos los IDs existentes
+        try:
+            numero = int(id_ord.replace("ORD-", ""))  # extraemos el numero del ID
+            if numero > ultimo_id_orden:  # si es mayor al contador actual
+                ultimo_id_orden = numero  # actualizamos el contador
+        except ValueError:
+            pass  # ignoramos IDs con formato inesperado
     clientes = cargar_clientes()  # carga clientes desde archivo al iniciar
     pagos = cargar_pagos() # carga pagos desde archivo al iniciar
     presupuestos = cargar_presupuestos() # carga presupuestos desde archivo al iniciar
