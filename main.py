@@ -520,22 +520,28 @@ def reasignar_tecnico_a_orden(tecnicos, ordenes):
     
 # Marca la ultima orden del tecnico como completada
 # La disponibilidad se recalcula sola al cambiar el estado de la orden
-def finalizar_trabajo_tecnico(id_tecnico, tecnicos, ordenes):
+def finalizar_trabajo_tecnico(tecnicos, ordenes):
+    try:
+        id_tecnico = int(input("Ingrese el ID del tecnico: "))
+    except ValueError:
+        print("Error: el ID del tecnico debe ser un numero.")
+        return
+
     if id_tecnico not in tecnicos:
         print("Error: Tecnico no encontrado.")
         return
 
-    if esta_disponible(id_tecnico, tecnicos, ordenes): # ya esta libre
+    if esta_disponible(id_tecnico, tecnicos, ordenes):
         print("El tecnico ya no tiene ordenes activas.")
         return
 
     if tecnicos[id_tecnico]["ordenes_asignadas"]:
-        id_ultima_orden = tecnicos[id_tecnico]["ordenes_asignadas"][-1]  # toma la ultima orden
+        id_ultima_orden = tecnicos[id_tecnico]["ordenes_asignadas"][-1]
         if id_ultima_orden in ordenes:
-            ordenes[id_ultima_orden]["estado"] = "completada"  # cambia el estado, eso lo libera
+            ordenes[id_ultima_orden]["estado"] = "completada"
 
     guardar_tecnicos(tecnicos)
-    guardar_ordenes(ordenes)  # guarda el estado completada de la orden
+    guardar_ordenes(ordenes)
     print("El tecnico", tecnicos[id_tecnico]["nombre"], "finalizo su orden y esta disponible.")
 
 
@@ -1291,16 +1297,19 @@ def menu():
         print("5. Mostrar técnicos")
         print("6. Mostrar técnicos disponibles")
         print("7. Asignar técnico a una orden\n")
+        print("8. Reasignar técnico a una orden\n")
+        print("9. Finalizar trabajo de tecnico\n")
         print("--- Pagos ---")
-        print("8. Registrar pago")
-        print("9. Ver estado de pagos / deudas\n")
+        print("10. Registrar pago")
+        print("11. Ver estado de pagos / deudas\n")
+        print("12. Ver historial de pagos de un cliente\n")
         print("--- Clientes ---")
-        print("10. Buscar cliente")
-        print("11. Ver historial de cliente\n")
+        print("13. Buscar cliente")
+        print("14. Ver historial de cliente\n")
         print("--- Presupuestos ---")
-        print("12. Generar presupuesto")
-        print("13. Ver presupuestos")
-        print("14. Calcular comisiones de tecnicos")
+        print("15. Generar presupuesto")
+        print("16. Ver presupuestos")
+        print("17. Calcular comisiones de tecnicos")
         print("0. Salir")
         print("==============================================================")
 
@@ -1322,19 +1331,23 @@ def menu():
             asignar_tecnico_a_orden(tecnicos, ordenes)
         elif opcion == "8":
             reasignar_tecnico_a_orden(tecnicos, ordenes)
-        elif opcion == "9":   # registrar un pago
+        elif opcion == "9":
+            finalizar_trabajo_tecnico(tecnicos, ordenes)
+        elif opcion == "10":   # registrar un pago
             registrar_pago(pagos, ordenes, clientes)
-        elif opcion == "10":  # ver clientes con deuda pendiente
+        elif opcion == "11":  # ver clientes con deuda pendiente
             ver_deudores(pagos, clientes)
-        elif opcion == "11":  # buscar un cliente
+        elif opcion == "12":
+            ver_historial_pagos_cliente(pagos, clientes)
+        elif opcion == "13":  # buscar un cliente
             buscar_cliente(clientes, pagos)
-        elif opcion == "12":   # ver historial de un cliente
+        elif opcion == "14":   # ver historial de un cliente
             ver_historial_cliente(clientes, ordenes, pagos, tecnicos)
-        elif opcion == "13":  # generar un presupuesto
+        elif opcion == "15":  # generar un presupuesto
             generar_presupuesto(presupuestos, ordenes, clientes)
-        elif opcion == "14": # ver presupuestos existentes
+        elif opcion == "16": # ver presupuestos existentes
             ver_presupuestos(presupuestos, ordenes, clientes)
-        elif opcion == "15": # calcular comisiones de tecnicos
+        elif opcion == "17": # calcular comisiones de tecnicos
             calcular_comisiones(tecnicos, ordenes, pagos)
         elif opcion == "0":  # salir del sistema
             print("Saliendo del sistema...")
