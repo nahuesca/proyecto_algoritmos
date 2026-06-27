@@ -1,0 +1,101 @@
+{
+    "ORD-1": {
+        "id": "ORD-1",
+        "telefono_cliente": "1164464032",
+        "descripcion": "Aire acondicionado no enfria, posible falta de gas",
+        "estado": "cobrada",
+        "fecha_creacion": "2026-06-10",
+        "fecha_visita": "2026-06-11",
+        "tecnico_id": 1,
+        "repuestos": [],
+        "monto_total": 0
+    },
+    "ORD-2": {
+        "id": "ORD-2",
+        "telefono_cliente": "1164464032",
+        "descripcion": "Instalacion de split nuevo en habitacion principal",
+        "estado": "pendiente",
+        "fecha_creacion": "2026-06-20",
+        "fecha_visita": "2026-06-28",
+        "tecnico_id": null,
+        "repuestos": [],
+        "monto_total": 0
+    },
+    "ORD-3": {
+        "id": "ORD-3",
+        "telefono_cliente": "1145678901",
+        "descripcion": "Revision periodica instalacion electrica",
+        "estado": "cobrada",
+        "fecha_creacion": "2026-06-05",
+        "fecha_visita": "2026-06-06",
+        "tecnico_id": 2,
+        "repuestos": [],
+        "monto_total": 0
+    },
+    "ORD-4": {
+        "id": "ORD-4",
+        "telefono_cliente": "1123456789",
+        "descripcion": "Cambio de disyuntor termico quemado en tablero",
+        "estado": "cobrada",
+        "fecha_creacion": "2026-06-12",
+        "fecha_visita": "2026-06-13",
+        "tecnico_id": 1,
+        "repuestos": [],
+        "monto_total": 0
+    },
+    "ORD-5": {
+        "id": "ORD-5",
+        "telefono_cliente": "1189012345",
+        "descripcion": "Corto circuito en tablero principal, sin luz en cocina",
+        "estado": "en_proceso",
+        "fecha_creacion": "2026-06-24",
+        "fecha_visita": "2026-06-25",
+        "tecnico_id": 2,
+        "repuestos": [],
+        "monto_total": 0
+    },
+    "ORD-6": {
+        "id": "ORD-6",
+        "telefono_cliente": "1167890123",
+        "descripcion": "Instalacion de split 3000 frigorias en living",
+        "estado": "pendiente",
+        "fecha_creacion": "2026-06-25",
+        "fecha_visita": "2026-06-30",
+        "tecnico_id": null,
+        "repuestos": [],
+        "monto_total": 0
+    },
+    "ORD-7": {
+        "id": "ORD-7",
+        "telefono_cliente": "112345678",
+        "descripcion": "plomeria rota",
+        "estado": "completada",
+        "fecha_creacion": "2026-06-26",
+        "fecha_visita": null,
+        "tecnico_id": 1,
+        "repuestos": [],
+        "monto_total": 0
+    },
+    "ORD-8": {
+        "id": "ORD-8",
+        "telefono_cliente": "1187654321",
+        "descripcion": "pierde gas la cocina",
+        "estado": "pendiente",
+        "fecha_creacion": "2026-06-26",
+        "fecha_visita": null,
+        "tecnico_id": null,
+        "repuestos": [],
+        "monto_total": 0
+    },
+    "ORD-9": {
+        "id": "ORD-9",
+        "telefono_cliente": "1143434343",
+        "descripcion": "no le anda la estufa",
+        "estado": "pendiente",
+        "fecha_creacion": "2026-06-26",
+        "fecha_visita": null,
+        "tecnico_id": null,
+        "repuestos": [],
+        "monto_total": 0
+    }
+}

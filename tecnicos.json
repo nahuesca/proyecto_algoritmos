@@ -1,0 +1,21 @@
+{
+    "1": {
+        "nombre": "Manuel Olivari",
+        "especialidad": "Aire acondicionado",
+        "telefono": "113443444",
+        "ordenes_asignadas": [
+            "ORD-1",
+            "ORD-4",
+            "ORD-7"
+        ]
+    },
+    "2": {
+        "nombre": "Jorge Benitez",
+        "especialidad": "Electricidad",
+        "telefono": "114556788",
+        "ordenes_asignadas": [
+            "ORD-3",
+            "ORD-5"
+        ]
+    }
+}

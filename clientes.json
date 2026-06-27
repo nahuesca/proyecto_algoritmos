@@ -1,0 +1,82 @@
+{
+    "1145678901": {
+        "nombre": "Carlos Mendoza",
+        "dni": "32145678",
+        "direccion": "Av. Corrientes 1234, CABA",
+        "tipo": "frecuente",
+        "ordenes": [
+            "ORD-3"
+        ]
+    },
+    "1167890123": {
+        "nombre": "Ana Gutierrez",
+        "dni": "28976543",
+        "direccion": "Mitre 456, Lomas de Zamora",
+        "tipo": "nuevo",
+        "ordenes": [
+            "ORD-6"
+        ]
+    },
+    "1189012345": {
+        "nombre": "Roberto Sosa",
+        "dni": "35421890",
+        "direccion": "San Martin 789, Moron",
+        "tipo": "problematico",
+        "ordenes": [
+            "ORD-5"
+        ]
+    },
+    "1123456789": {
+        "nombre": "Laura Fernandez",
+        "dni": "41230987",
+        "direccion": "Belgrano 321, Quilmes",
+        "tipo": "frecuente",
+        "ordenes": [
+            "ORD-4"
+        ]
+    },
+    "1156789012": {
+        "nombre": "Diego Ramirez",
+        "dni": "30876543",
+        "direccion": "Rivadavia 654, San Justo",
+        "tipo": "nuevo",
+        "ordenes": []
+    },
+    "1164464032": {
+        "nombre": "Nahuel Escalante",
+        "dni": "47130283",
+        "direccion": "Av. Peron 2233, San Justo",
+        "tipo": "nuevo",
+        "ordenes": [
+            "ORD-1",
+            "ORD-2"
+        ]
+    },
+    "112345678": {
+        "nombre": "alvaro martinez",
+        "dni": "12345567",
+        "direccion": "cabo verde 2233",
+        "tipo": "frecuente",
+        "ordenes": [
+            "ORD-7"
+        ]
+    },
+    "1187654321": {
+        "nombre": "marcelo bielsa",
+        "dni": "",
+        "direccion": "madrid 2266",
+        "tipo": "frecuente",
+        "ordenes": [
+            "ORD-8"
+        ]
+    },
+    "1143434343": {
+        "nombre": "martin palermo",
+        "dni": "",
+        "direccion": "gh 45",
+        "tipo": "frecuente",
+        "ordenes": [
+            "ORD-9"
+        ]
+    }
+}

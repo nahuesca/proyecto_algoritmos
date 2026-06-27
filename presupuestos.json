@@ -1,0 +1,105 @@
+{
+    "ORD-1": {
+        "id_orden": "ORD-1",
+        "tipo_trabajo": "simple",
+        "mano_de_obra": 5000.0,
+        "repuestos": [
+            {
+                "nombre": "Gas refrigerante R32",
+                "precio": 6500.0
+            },
+            {
+                "nombre": "Valvula de carga",
+                "precio": 3500.0
+            }
+        ],
+        "total_calculado": 15000.0,
+        "total_final": 15000.0,
+        "estado": "aprobado"
+    },
+    "ORD-3": {
+        "id_orden": "ORD-3",
+        "tipo_trabajo": "simple",
+        "mano_de_obra": 5000.0,
+        "repuestos": [
+            {
+                "nombre": "Cable unipolar 2.5mm x5m",
+                "precio": 4500.0
+            },
+            {
+                "nombre": "Cinta aisladora",
+                "precio": 500.0
+            },
+            {
+                "nombre": "Terminales electricos",
+                "precio": 2000.0
+            }
+        ],
+        "total_calculado": 12000.0,
+        "total_final": 12000.0,
+        "estado": "aprobado"
+    },
+    "ORD-4": {
+        "id_orden": "ORD-4",
+        "tipo_trabajo": "simple",
+        "mano_de_obra": 5000.0,
+        "repuestos": [
+            {
+                "nombre": "Disyuntor termico 20A",
+                "precio": 3500.0
+            }
+        ],
+        "total_calculado": 8500.0,
+        "total_final": 8500.0,
+        "estado": "aprobado"
+    },
+    "ORD-6": {
+        "id_orden": "ORD-6",
+        "tipo_trabajo": "complicado",
+        "mano_de_obra": 12000.0,
+        "repuestos": [
+            {
+                "nombre": "Split 3000 frigorias Carrier",
+                "precio": 185000.0
+            },
+            {
+                "nombre": "Cano corrugado 3/4 x3m",
+                "precio": 2500.0
+            },
+            {
+                "nombre": "Soporte exterior",
+                "precio": 1800.0
+            }
+        ],
+        "total_calculado": 201300.0,
+        "total_final": 200000.0,
+        "estado": "aprobado"
+    },
+    "ORD-2": {
+        "id_orden": "ORD-2",
+        "tipo_trabajo": "complicado",
+        "mano_de_obra": 12000.0,
+        "repuestos": [
+            {
+                "nombre": "tornillo",
+                "precio": 1000.0
+            },
+            {
+                "nombre": "gas",
+                "precio": 15000.0
+            }
+        ],
+        "total_calculado": 28000.0,
+        "total_final": 28000.0,
+        "estado": "aprobado"
+    },
+    "ORD-7": {
+        "id_orden": "ORD-7",
+        "tipo_trabajo": "complicado",
+        "mano_de_obra": 12000.0,
+        "repuestos": [],
+        "total_calculado": 12000.0,
+        "total_final": 100000.0,
+        "estado": "aprobado"
+    }
+}
