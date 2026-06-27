@@ -268,8 +268,6 @@ def mostrar_ordenes_pendientes(ordenes, clientes):
 # MODULO 2 - GESTION DE TECNICOS
 # ============================================================
 
-#AGREGAR REASIGNAR TECNICO
-#VALIDAR TELEFONO TECNICO
 
 # Lee el archivo JSON y devuelve el diccionario de tecnicos
 def cargar_tecnicos():
@@ -393,7 +391,68 @@ def asignar_tecnico_a_orden(tecnicos, ordenes):
     else:
         print("Error: Tecnico u orden no encontrados.")
 
+def reasignar_tecnico_a_orden(tecnicos, ordenes):
+    print("\n--- Reasignar Tecnico a Orden ---")
 
+    id_orden = input("Ingrese el ID de la orden a reasignar (ej: ORD-1): ").strip()  # pide la orden
+
+    if id_orden not in ordenes:  # verifica que la orden exista
+        print("No se encontro una orden con ese ID.")
+        return  # sale si no existe
+
+    orden = ordenes[id_orden]  # referencia a la orden
+
+    if orden["estado"] == "completada" or orden["estado"] == "cobrada":  # no reasignar si ya termino
+        print("La orden ya esta", orden["estado"], "y no se puede reasignar.")
+        return  # sale sin hacer cambios
+
+    id_tecnico_actual = orden["tecnico_id"]  # tecnico que tenia la orden
+
+    if id_tecnico_actual is None:  # si la orden no tenia tecnico asignado todavia
+        print("Esta orden no tiene tecnico asignado. Use la opcion de asignar tecnico.")
+        return  # redirige al usuario a la funcion correcta
+
+    nombre_anterior = tecnicos[id_tecnico_actual]["nombre"]  # nombre del tecnico que se va a sacar
+    print("Tecnico actual:", nombre_anterior)
+
+    disponibles = obtener_tecnicos_disponibles(tecnicos, ordenes)  # lista de tecnicos libres
+
+    if not disponibles:  # si no hay ninguno libre
+        return  # sale, obtener_tecnicos_disponibles ya imprimio el aviso
+
+    try:
+        id_tecnico_nuevo = int(input("Ingrese el ID del nuevo tecnico: "))  # pide el ID del nuevo
+    except ValueError:
+        print("Error: el ID del tecnico debe ser un numero.")
+        return  # sale si no es un numero
+
+    if id_tecnico_nuevo not in tecnicos:  # verifica que el tecnico nuevo exista
+        print("No se encontro un tecnico con ese ID.")
+        return  # sale si no existe
+
+    if id_tecnico_nuevo == id_tecnico_actual:  # no tiene sentido reasignar al mismo
+        print("El tecnico nuevo es el mismo que el actual. No se realizo ningun cambio.")
+        return  # sale sin cambios
+
+    if id_tecnico_nuevo not in disponibles:  # verifica que el nuevo este disponible
+        print("El tecnico seleccionado no esta disponible en este momento.")
+        return  # sale si esta ocupado
+
+    # saca la orden del historial del tecnico anterior
+    if id_orden in tecnicos[id_tecnico_actual]["ordenes_asignadas"]:
+        tecnicos[id_tecnico_actual]["ordenes_asignadas"].remove(id_orden)
+
+    # agrega la orden al historial del tecnico nuevo
+    tecnicos[id_tecnico_nuevo]["ordenes_asignadas"].append(id_orden)
+
+    # actualiza el campo tecnico_id en la orden
+    ordenes[id_orden]["tecnico_id"] = id_tecnico_nuevo
+
+    guardar_tecnicos(tecnicos)  # guarda los cambios en el archivo
+
+    nombre_nuevo = tecnicos[id_tecnico_nuevo]["nombre"]  # nombre del tecnico nuevo para el mensaje
+    print("Orden", id_orden, "reasignada de", nombre_anterior, "a", nombre_nuevo)
+    
 # Marca la ultima orden del tecnico como completada
 # La disponibilidad se recalcula sola al cambiar el estado de la orden
 def finalizar_trabajo_tecnico(id_tecnico, tecnicos, ordenes):
