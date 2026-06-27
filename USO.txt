@@ -1,21 +1,9 @@
 ============================================================
 GUIA DE USO — SISTEMA DE GESTION DE SERVICIOS TECNICOS
 ============================================================
-
-COMO ARRANCAR
--------------
-Ejecutar desde la terminal:
-
-    python main.py
-
-El sistema carga automaticamente los datos de los archivos JSON
-y muestra el menu principal. Con los datos de prueba ya tenes
-2 tecnicos, 6 clientes, 6 ordenes, pagos y presupuestos listos.
-
-============================================================
-FLUJO TIPICO DE UN TRABAJO (de principio a fin)
-============================================================
-
+=============
+FLUJO TIPICO 
+=============
 PASO 1 — CREAR UNA ORDEN (opcion 1)
   El sistema pide el telefono del cliente.
   Si ya existe lo encuentra automaticamente y muestra sus datos.
@@ -36,7 +24,6 @@ PASO 1 — CREAR UNA ORDEN (opcion 1)
 
   La orden se crea con estado PENDIENTE y se guarda en ordenes.json.
   ID asignado automaticamente: ORD-7, ORD-8, etc.
-
 
 PASO 2 — GENERAR PRESUPUESTO (opcion 11)
   Se hace antes o despues de la visita, segun el trabajo.
@@ -61,7 +48,6 @@ PASO 2 — GENERAR PRESUPUESTO (opcion 11)
   Queda registrado como APROBADO y guardado en presupuestos.json.
   Si el cliente no aprueba, se guarda como RECHAZADO (queda en historial).
 
-
 PASO 3 — ASIGNAR TECNICO (opcion 6)
   Muestra los tecnicos disponibles en ese momento:
     ID: 1 | Nombre: Manuel Olivari
@@ -72,7 +58,6 @@ PASO 3 — ASIGNAR TECNICO (opcion 6)
   La orden pasa automaticamente a estado EN_PROCESO.
   Con los datos de prueba, Manuel esta libre (sus ordenes estan cerradas).
   Jorge esta ocupado por ORD-5 (en_proceso), no aparece como disponible.
-
 
 PASO 4 — CAMBIAR ESTADO (opcion 2)
   Cuando el tecnico termina, el dueno avanza el estado manualmente.
@@ -86,7 +71,6 @@ PASO 4 — CAMBIAR ESTADO (opcion 2)
 
   Una orden pasa a COBRADA solo desde el modulo de pagos (opcion 7),
   no desde esta opcion — asi se asegura que haya pago registrado.
-
 
 PASO 5 — REGISTRAR PAGO (opcion 7)
   Solo se puede registrar pago de ordenes COMPLETADAS o COBRADAS.
@@ -108,7 +92,6 @@ PASO 5 — REGISTRAR PAGO (opcion 7)
 
   La orden se cierra sola cuando el saldo llega a cero.
 
-
 ============================================================
 OPCIONES DE CONSULTA
 ============================================================
@@ -118,19 +101,16 @@ VER ORDENES ACTIVAS (opcion 3)
   Con los datos de prueba aparecen: ORD-2, ORD-5, ORD-6.
   No requiere ninguna entrada, solo presionar 3.
 
-
 VER TECNICOS (opcion 5)
   Muestra el estado de cada tecnico en tiempo real.
   Con los datos de prueba:
     Manuel Olivari — Disponible
     Jorge Benitez  — Ocupado   (tiene ORD-5 en_proceso)
 
-
 VER DEUDORES (opcion 8)
   Lista todos los clientes con saldo pendiente.
   Con los datos de prueba aparece Nahuel Escalante con $ 8000
   pendientes de ORD-1, con alerta por ser cliente NUEVO.
-
 
 BUSCAR CLIENTE (opcion 9)
   Acepta texto libre: nombre completo, parte del nombre o telefono.
