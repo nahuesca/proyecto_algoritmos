@@ -274,12 +274,17 @@ def mostrar_ordenes_pendientes(ordenes, clientes):
 
 
 # Lee el archivo JSON y devuelve el diccionario de tecnicos
+# Convierte los keys de string a int porque JSON siempre guarda keys como strings
 def cargar_tecnicos():
     try:
         archivo = open(ARCHIVO_TECNICOS, "r", encoding="UTF-8")  # abre en lectura
         contenido = archivo.read() # lee el contenido
         archivo.close() # cierra el archivo
-        return json.loads(contenido)  # convierte a diccionario y devuelve
+        tecnicos_raw = json.loads(contenido) # convertimos el texto a diccionario
+        tecnicos = {} # diccionario con keys enteros
+        for k in tecnicos_raw: # recorremos los keys string que trajo el JSON
+            tecnicos[int(k)] = tecnicos_raw[k] # los convertimos a int
+        return tecnicos # devolvemos el diccionario con keys correctos
     except FileNotFoundError:
         print("Aviso: no se encontro el archivo de tecnicos. Se empieza con lista vacia.")  # archivo no existe aun
         return {} # devuelve diccionario vacio
@@ -1199,10 +1204,13 @@ def calcular_comisiones(tecnicos, ordenes, pagos):
 def menu():
     opcion = ""  # valor inicial para entrar al while
     ultimo_id_orden = 0  # contador de ordenes creadas en esta sesion
-    ultimo_id_tecnico = 0 # contador de tecnicos registrados en esta sesion
+    tecnicos = cargar_tecnicos() # carga tecnicos desde archivo al iniciar
+    if len(tecnicos) > 0: # si ya hay tecnicos cargados
+        ultimo_id_tecnico = max(tecnicos) # arranca desde el ID mas alto existente
+    else:
+        ultimo_id_tecnico = 0 # si no hay tecnicos arranca en 0
     ordenes = {}  # diccionario de ordenes, vacio al arrancar
     clientes = cargar_clientes()  # carga clientes desde archivo al iniciar
-    tecnicos = cargar_tecnicos() # carga tecnicos desde archivo al iniciar
     pagos = cargar_pagos() # carga pagos desde archivo al iniciar
     presupuestos = cargar_presupuestos() # carga presupuestos desde archivo al iniciar
 
