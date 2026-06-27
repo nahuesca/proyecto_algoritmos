@@ -25,6 +25,7 @@ ultimo_id_tecnico = 0  # contador global de tecnicos registrados
 # ================================================================
 
 import json # para leer y escribir archivos JSON
+import re # para busqueda flexible de texto con expresiones regulares
 from datetime import date  # para registrar la fecha de creacion
 from validaciones import validar_telefono, validar_dni  # funciones de validacion compartidas
 
@@ -750,18 +751,210 @@ def alerta_deuda(telefono, pagos, clientes):
             print("ATENCION: el cliente es", tipo.upper(), "y tiene deuda. Se recomienda no continuar.")  # alerta fuerte
 
 
-# ============================================================
+# ================================================================
 # MODULO 4 - BUSQUEDA E HISTORIAL DE CLIENTES
-# ============================================================
+# Variables: clientes, ordenes, pagos, tecnicos
+# Funciones:
+#   buscar_cliente()        - busca por nombre o telefono y muestra info basica
+#   ver_historial_cliente() - busca y muestra el historial completo de ordenes
+# ================================================================
 
-# Busca un cliente por nombre o telefono
-def buscar_cliente():
-    print("")  # pendiente de implementacion
+# Busca un cliente por texto libre en nombre o telefono usando expresiones regulares
+# Muestra info basica: tipo, deuda y cantidad de ordenes registradas
+def buscar_cliente(clientes, pagos):
+    texto = input("Ingresa nombre o telefono para buscar: ").strip() # texto libre del usuario
+
+    if texto == "": # si no escribio nada
+        print("No ingresaste texto para buscar.") # avisamos
+        return # salimos
+
+    try:
+        patron = re.compile(texto, re.IGNORECASE) # compilamos el patron ignorando mayusculas
+    except re.error:
+        print("Texto de busqueda invalido.") # avisamos si el texto tiene caracteres invalidos
+        return # salimos
+
+    resultados = [] # lista de telefonos que coinciden con la busqueda
+
+    for telefono in clientes: # recorremos todos los clientes
+        nombre = clientes[telefono]["nombre"] # nombre del cliente actual
+        if re.search(patron, telefono) or re.search(patron, nombre): # buscamos en telefono y nombre
+            resultados.append(telefono) # guardamos si hay coincidencia
+
+    if len(resultados) == 0: # si no encontramos nada
+        print("No se encontro ningun cliente con ese texto.") # avisamos
+        return # salimos
+
+    if len(resultados) == 1: # si encontramos uno solo
+        telefono = resultados[0] # lo tomamos directamente
+    else:
+        print("Se encontraron", len(resultados), "clientes:") # informamos cuantos hay
+        contador = 1 # indice para que el usuario elija
+        for tel in resultados: # mostramos cada resultado
+            nombre = clientes[tel]["nombre"] # nombre del cliente
+            tipo = clientes[tel]["tipo"] # tipo del cliente
+            print(" ", contador, ".", nombre, "(", tel, ") -", tipo) # mostramos la opcion
+            contador = contador + 1 # avanzamos el contador
+
+        opcion_input = input("Elegis un numero (o Enter para cancelar): ").strip() # pedimos eleccion
+
+        if opcion_input == "": # si cancelo
+            return # salimos sin mostrar nada
+
+        try:
+            opcion = int(opcion_input) # convertimos a entero
+        except ValueError:
+            print("Opcion invalida.") # avisamos si no es numero
+            return # salimos
+
+        if opcion < 1 or opcion > len(resultados): # si esta fuera de rango
+            print("Numero fuera de rango.") # avisamos
+            return # salimos
+
+        telefono = resultados[opcion - 1] # tomamos el elegido (ajustamos indice base 0)
+
+    cliente = clientes[telefono] # referencia al cliente encontrado
+
+    deuda_total = 0 # acumulador de deuda pendiente
+    for id_orden in pagos: # recorremos todos los pagos
+        if pagos[id_orden]["telefono_cliente"] == telefono: # si es de este cliente
+            deuda_total = deuda_total + pagos[id_orden]["saldo"] # sumamos el saldo pendiente
+
+    print("==================================================")
+    print("CLIENTE:", cliente["nombre"])
+    print("Telefono:", telefono, "| Tipo:", cliente["tipo"].upper())
+    if cliente["dni"] != "": # si tiene DNI cargado
+        print("DNI:", cliente["dni"]) # lo mostramos
+    print("Direccion:", cliente["direccion"]) # mostramos la direccion
+    if deuda_total > 0: # si tiene deuda
+        print("DEUDA PENDIENTE: $", deuda_total) # mostramos la deuda con alerta
+    else:
+        print("Sin deuda pendiente.") # confirmamos que esta al dia
+    print("Ordenes registradas:", len(cliente["ordenes"])) # cantidad total de ordenes
+    print("==================================================")
 
 
-# Muestra el historial completo de un cliente
-def ver_historial_cliente():
-    print("")  # pendiente de implementacion
+# Busca un cliente y muestra el historial completo de sus ordenes en orden cronologico
+# Incluye estado, tecnico asignado y datos de pago de cada orden
+def ver_historial_cliente(clientes, ordenes, pagos, tecnicos):
+    texto = input("Ingresa nombre o telefono para buscar: ").strip() # texto libre del usuario
+
+    if texto == "": # si no escribio nada
+        print("No ingresaste texto para buscar.") # avisamos
+        return # salimos
+
+    try:
+        patron = re.compile(texto, re.IGNORECASE) # compilamos el patron ignorando mayusculas
+    except re.error:
+        print("Texto de busqueda invalido.") # avisamos si el texto tiene caracteres invalidos
+        return # salimos
+
+    resultados = [] # lista de telefonos que coinciden con la busqueda
+
+    for telefono in clientes: # recorremos todos los clientes
+        nombre = clientes[telefono]["nombre"] # nombre del cliente actual
+        if re.search(patron, telefono) or re.search(patron, nombre): # buscamos en telefono y nombre
+            resultados.append(telefono) # guardamos si hay coincidencia
+
+    if len(resultados) == 0: # si no encontramos nada
+        print("No se encontro ningun cliente con ese texto.") # avisamos
+        return # salimos
+
+    if len(resultados) == 1: # si encontramos uno solo
+        telefono = resultados[0] # lo tomamos directamente
+    else:
+        print("Se encontraron", len(resultados), "clientes:") # informamos cuantos hay
+        contador = 1 # indice para que el usuario elija
+        for tel in resultados: # mostramos cada resultado
+            nombre = clientes[tel]["nombre"] # nombre del cliente
+            tipo = clientes[tel]["tipo"] # tipo del cliente
+            print(" ", contador, ".", nombre, "(", tel, ") -", tipo) # mostramos la opcion
+            contador = contador + 1 # avanzamos el contador
+
+        opcion_input = input("Elegis un numero (o Enter para cancelar): ").strip() # pedimos eleccion
+
+        if opcion_input == "": # si cancelo
+            return # salimos sin mostrar nada
+
+        try:
+            opcion = int(opcion_input) # convertimos a entero
+        except ValueError:
+            print("Opcion invalida.") # avisamos si no es numero
+            return # salimos
+
+        if opcion < 1 or opcion > len(resultados): # si esta fuera de rango
+            print("Numero fuera de rango.") # avisamos
+            return # salimos
+
+        telefono = resultados[opcion - 1] # tomamos el elegido (ajustamos indice base 0)
+
+    cliente = clientes[telefono] # referencia al cliente encontrado
+    ids_ordenes = cliente["ordenes"] # lista de IDs de ordenes del cliente
+
+    deuda_total = 0 # acumulador de deuda
+    for id_orden in pagos: # recorremos todos los pagos
+        if pagos[id_orden]["telefono_cliente"] == telefono: # si es de este cliente
+            deuda_total = deuda_total + pagos[id_orden]["saldo"] # sumamos el saldo
+
+    print("==================================================")
+    print("HISTORIAL:", cliente["nombre"])
+    print("Telefono:", telefono, "| Tipo:", cliente["tipo"].upper())
+    if deuda_total > 0: # si tiene deuda
+        print("DEUDA PENDIENTE: $", deuda_total) # mostramos con alerta
+    else:
+        print("Sin deuda pendiente.") # confirmamos al dia
+    print("==================================================")
+
+    if len(ids_ordenes) == 0: # si no tiene ordenes
+        print("Este cliente no tiene ordenes registradas.") # avisamos
+        return # salimos
+
+    ids_validos = [] # lista de IDs que todavia existen en ordenes
+    for id_ord in ids_ordenes: # recorremos los IDs del cliente
+        if id_ord in ordenes: # si la orden todavia existe en el sistema
+            ids_validos.append(id_ord) # la agregamos
+
+    # construimos pares [fecha, id] para poder ordenar sin sorted() con clave
+    pares = [] # lista de pares [fecha_creacion, id_orden]
+    for id_ord in ids_validos: # recorremos los IDs validos
+        fecha = ordenes[id_ord]["fecha_creacion"] # obtenemos la fecha de la orden
+        pares.append([fecha, id_ord]) # agregamos el par
+
+    # burbujeo descendente: la orden mas reciente queda primero
+    n = len(pares) # cantidad de ordenes
+    for i in range(n): # pasadas del burbujeo
+        for j in range(0, n - i - 1): # comparamos pares adyacentes
+            if pares[j][0] < pares[j + 1][0]: # si el izquierdo es mas viejo
+                temp = pares[j] # guardamos temporalmente
+                pares[j] = pares[j + 1] # movemos el mas nuevo a la izquierda
+                pares[j + 1] = temp # movemos el mas viejo a la derecha
+
+    print("Ordenes (mas reciente primero):")
+    print()
+
+    for par in pares: # recorremos los pares ya ordenados
+        id_ord = par[1] # obtenemos el ID de la orden
+        orden = ordenes[id_ord] # referencia a la orden
+
+        print("  Orden:", id_ord, "| Estado:", orden["estado"].upper()) # ID y estado
+        print("  Fecha:", orden["fecha_creacion"]) # fecha de creacion
+        print("  Descripcion:", orden["descripcion"]) # descripcion del trabajo
+
+        if orden["tecnico_id"] is not None: # si tiene tecnico asignado
+            id_tec = orden["tecnico_id"] # ID del tecnico
+            if id_tec in tecnicos: # si el tecnico existe en el sistema
+                nombre_tec = tecnicos[id_tec]["nombre"] # nombre del tecnico
+            else:
+                nombre_tec = "Tecnico desconocido" # nombre generico si fue borrado
+            print("  Tecnico:", nombre_tec) # mostramos el tecnico
+        else:
+            print("  Tecnico: sin asignar") # si no tiene tecnico asignado
+
+        if id_ord in pagos: # si tiene pago registrado
+            pago = pagos[id_ord] # referencia al pago
+            print("  Monto total: $", pago["monto_total"], "| Saldo pendiente: $", pago["saldo"]) # datos de pago
+
+        print() # linea en blanco entre ordenes
 
 
 # ============================================================
@@ -833,9 +1026,9 @@ def menu():
         elif opcion == "8":  # ver clientes con deuda pendiente
             ver_deudores(pagos, clientes)
         elif opcion == "9":  # buscar un cliente
-            buscar_cliente()
+            buscar_cliente(clientes, pagos)
         elif opcion == "10":   # ver historial de un cliente
-            ver_historial_cliente()
+            ver_historial_cliente(clientes, ordenes, pagos, tecnicos)
         elif opcion == "11":  # generar un presupuesto
             generar_presupuesto()
         elif opcion == "12": # ver presupuestos existentes
