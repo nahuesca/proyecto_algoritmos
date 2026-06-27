@@ -276,27 +276,177 @@ Nota: El sistema solo usa librerías estándar de Python, no requiere instalacio
 ## Flujo Típico de un Trabajo
 
 ```
-1. Cliente llama o visita
-   |
-2. Dueño registra orden (Estado: PENDIENTE)
-   - Sistema alerta si el cliente tiene deuda anterior
-   |
-3. Se asigna técnico disponible (Estado: EN PROCESO)
-   - Sistema calcula disponibilidad en tiempo real
-   |
-4. Técnico finaliza trabajo (Estado: COMPLETADA)
-   |
-5. Se genera presupuesto (si no se hizo antes)
-   - Repuestos + Mano de obra
-   - Cliente aprueba o rechaza
-   |
-6. Se registra el pago
-   - Puede ser pago total o parcial
-   - Se registra método (efectivo/transferencia)
-   |
-7. Saldo = $0 → Orden pasa a COBRADA
-   |
-8. Se calcula comisión del técnico (si aplica)
+============================================================
+FLUJO TIPICO DE UN TRABAJO (de principio a fin)
+============================================================
+
+PASO 1 — CREAR UNA ORDEN (opcion 1)
+  El sistema pide el telefono del cliente.
+  Si ya existe lo encuentra automaticamente y muestra sus datos.
+  Si tiene deuda pendiente, aparece un aviso antes de continuar.
+
+  Ejemplo con cliente nuevo:
+    Telefono: 1156789012         <- Diego Ramirez (ya cargado)
+    Descripcion del problema: Cortocircuito en habitacion
+    Fecha de visita (opcional): 05-07-2026
+
+  Ejemplo con cliente nuevo que no esta en el sistema:
+    Telefono: 1199999999
+    -> El sistema pregunta si se quiere cargar como cliente nuevo
+    Nombre: Juan Lopez
+    DNI (opcional): Enter
+    Direccion: Sarandi 123, Avellaneda
+    Tipo (1=frecuente / 2=nuevo / 3=problematico): 2
+
+  La orden se crea con estado PENDIENTE y se guarda en ordenes.json.
+  ID asignado automaticamente: ORD-7, ORD-8, etc.
+
+                
+PASO 2 — GENERAR PRESUPUESTO (opcion 11)
+  Se hace antes o despues de la visita, segun el trabajo.
+
+    ID de la orden: ORD-7
+    Tipo de trabajo:
+      1. Simple  ($ 5000)
+      2. Complicado ($ 12000)
+    -> Elegir: 1
+
+    Cargar repuestos uno por uno:
+      Nombre: Cinta aisladora
+      Precio: 500
+      Nombre: Disyuntor 16A
+      Precio: 2800
+      Nombre: (Enter para terminar)
+
+    Total calculado: $ 8300.0
+    Queres ajustar el total? (s/n): n
+    El cliente aprobo el presupuesto? (s/n): s
+
+  Queda registrado como APROBADO y guardado en presupuestos.json.
+  Si el cliente no aprueba, se guarda como RECHAZADO (queda en historial).
+
+
+PASO 3 — ASIGNAR TECNICO (opcion 6)
+  Muestra los tecnicos disponibles en ese momento:
+    ID: 1 | Nombre: Manuel Olivari
+
+    ID del tecnico: 1
+    ID de la orden: ORD-7
+
+  La orden pasa automaticamente a estado EN_PROCESO.
+  Con los datos de prueba, Manuel esta libre (sus ordenes estan cerradas).
+  Jorge esta ocupado por ORD-5 (en_proceso), no aparece como disponible.
+
+
+PASO 4 — CAMBIAR ESTADO (opcion 2)
+  Cuando el tecnico termina, el dueno avanza el estado manualmente.
+
+    ID de la orden: ORD-7
+    Estado actual: en_proceso -> Nuevo estado: completada
+    Confirmas el cambio? (s/n): s
+
+  Los estados avanzan en orden fijo:
+    pendiente -> en_proceso -> completada -> cobrada
+
+  Una orden pasa a COBRADA solo desde el modulo de pagos (opcion 7),
+  no desde esta opcion — asi se asegura que haya pago registrado.
+
+
+PASO 5 — REGISTRAR PAGO (opcion 7)
+  Solo se puede registrar pago de ordenes COMPLETADAS o COBRADAS.
+
+  Primera vez (crea la deuda):
+    ID de la orden: ORD-7
+    Monto total del trabajo ($): 8300
+    El cliente pago algo ahora? (s/n): s
+    Cuanto pago ahora ($): 5000
+    Metodo de pago: 1 (efectivo)
+    -> Pago parcial registrado. Saldo restante: $ 3300.0
+
+  Segunda vez (abona el resto):
+    ID de la orden: ORD-7
+    Saldo pendiente: $ 3300.0
+    Cuanto paga ahora ($): 3300
+    Metodo de pago: 2 (transferencia)
+    -> Pago total. La orden pasa a estado COBRADA.
+
+  La orden se cierra sola cuando el saldo llega a cero.
+
+
+============================================================
+OPCIONES DE CONSULTA
+============================================================
+
+VER ORDENES ACTIVAS (opcion 3)
+  Muestra todas las ordenes con estado pendiente o en_proceso.
+  Con los datos de prueba aparecen: ORD-2, ORD-5, ORD-6.
+  No requiere ninguna entrada, solo presionar 3.
+
+
+VER TECNICOS (opcion 5)
+  Muestra el estado de cada tecnico en tiempo real.
+  Con los datos de prueba:
+    Manuel Olivari — Disponible
+    Jorge Benitez  — Ocupado   (tiene ORD-5 en_proceso)
+
+
+VER DEUDORES (opcion 8)
+  Lista todos los clientes con saldo pendiente.
+  Con los datos de prueba aparece Nahuel Escalante con $ 8000
+  pendientes de ORD-1, con alerta por ser cliente NUEVO.
+
+
+BUSCAR CLIENTE (opcion 9)
+  Acepta texto libre: nombre completo, parte del nombre o telefono.
+
+    Buscar: Carlos          <- encuentra Carlos Mendoza
+    Buscar: 1164            <- encuentra Nahuel Escalante
+    Buscar: gut             <- encuentra Ana Gutierrez (sin importar mayusculas)
+
+  Si hay varios resultados muestra una lista numerada para elegir.
+  Muestra: nombre, tipo, DNI, direccion, deuda total y cantidad de ordenes.
+
+
+VER HISTORIAL (opcion 10)
+  Igual que buscar, pero despues muestra todas las ordenes del cliente
+  ordenadas de mas reciente a mas antigua.
+  Por cada orden: ID, estado, fecha, descripcion, tecnico asignado
+  y monto de pago si existe.
+
+  Ejemplo interesante con los datos de prueba:
+    Buscar: Nahuel
+    -> Muestra ORD-2 (pendiente, sin pago) y ORD-1 (completada, $ 8000 pendiente)
+
+
+VER PRESUPUESTOS (opcion 12)
+  Lista todos los presupuestos con estado (aprobado/rechazado),
+  tipo de trabajo, total y detalle de repuestos.
+  Con los datos de prueba hay 4 presupuestos cargados.
+
+
+CALCULAR COMISIONES (opcion 13)
+  Calcula lo que le corresponde pagar a cada tecnico en un mes.
+
+    Mes a calcular: 2026-06    <- formato YYYY-MM, o Enter para el mes actual
+
+  Para cada tecnico muestra el total cobrado en ordenes de ese mes
+  y pide el porcentaje de comision:
+    Porcentaje de comision para Manuel Olivari (%): 30
+    -> Comision a pagar: $ 3600.0
+
+  El calculo es orientativo, el dueno lo verifica manualmente.
+
+
+REGISTRAR TECNICO (opcion 4)
+  Agrega un tecnico nuevo al sistema.
+
+    Nombre: Pedro Vasquez
+    Especialidad: Electricidad
+    Telefono (opcional): 1122334455
+
+  El ID se asigna automaticamente (siguiente al maximo existente).
+  Con los datos de prueba el proximo seria ID 3.
+
 ```
 
 ---
