@@ -319,9 +319,8 @@ def mostrar_ordenes_pendientes(ordenes, clientes):
 # Convierte los keys de string a int porque JSON siempre guarda keys como strings
 def cargar_tecnicos():
     try:
-        archivo = open(ARCHIVO_TECNICOS, "r", encoding="UTF-8")  # abre en lectura
-        contenido = archivo.read() # lee el contenido
-        archivo.close() # cierra el archivo
+        with open(ARCHIVO_TECNICOS, "r", encoding="UTF-8") as archivo:  # with open cierra el archivo automaticamente
+            contenido = archivo.read() # lee el contenido
         tecnicos_raw = json.loads(contenido) # convertimos el texto a diccionario
         tecnicos = {} # diccionario con keys enteros
         for k in tecnicos_raw: # recorremos los keys string que trajo el JSON
@@ -333,17 +332,21 @@ def cargar_tecnicos():
     except json.JSONDecodeError:
         print("Error: el archivo de tecnicos esta corrupto. Se empieza con lista vacia.")   # JSON invalido
         return {} # devuelve diccionario vacio
+    except Exception as e:
+        print("Error inesperado al cargar tecnicos:", e) # cualquier otro error no previsto
+        return {} # devuelve diccionario vacio
 
 
 # Guarda el diccionario de tecnicos en el archivo JSON
 def guardar_tecnicos(tecnicos):
     try:
-        archivo = open(ARCHIVO_TECNICOS, "w", encoding="UTF-8")    # abre en escritura
-        contenido = json.dumps(tecnicos, indent=4, ensure_ascii=False)   # convierte a JSON prolijo
-        archivo.write(contenido)    # escribe el contenido
-        archivo.close() # cierra el archivo
+        with open(ARCHIVO_TECNICOS, "w", encoding="UTF-8") as archivo:  # with open cierra el archivo automaticamente
+            contenido = json.dumps(tecnicos, indent=4, ensure_ascii=False)   # convierte a JSON prolijo
+            archivo.write(contenido)    # escribe el contenido
     except OSError:
         print("Error: no se pudieron guardar los datos de tecnicos.") # error de permisos o disco lleno
+    except Exception as e:
+        print("Error inesperado al guardar tecnicos:", e) # cualquier otro error no previsto
 
 
 # Registra un tecnico nuevo y devuelve el contador actualizado
@@ -405,25 +408,30 @@ def mostrar_tecnicos(tecnicos, ordenes):
 
 
 # Devuelve lista de IDs de tecnicos sin ordenes activas en este momento
+# Funcion pura: solo calcula y devuelve, sin imprimir nada
 def obtener_tecnicos_disponibles(tecnicos, ordenes):
     disponibles = []
     for id_t in tecnicos: # recorre todos los tecnicos
         if esta_disponible(id_t, tecnicos, ordenes): # usa la funcion auxiliar
             disponibles.append(id_t)
-            
+    return disponibles
+
+
+# Muestra por pantalla los tecnicos disponibles
+# Llama a obtener_tecnicos_disponibles y maneja el caso de lista vacia
+def mostrar_tecnicos_disponibles(tecnicos, ordenes):
     disponibles = obtener_tecnicos_disponibles(tecnicos, ordenes)
-    
     if not disponibles:
-        return
-    for id_t in disponibles: # recorremos los tecnicos disponibles
-        print("  ID:", id_t, "| Nombre:", tecnicos[id_t]["nombre"]) # mostramos ID y nombre
         print("No hay tecnicos disponibles en este momento.")
+        return disponibles  # devuelve lista vacia para que el que llama pueda cortar
+    for id_t in disponibles: # recorre los disponibles
+        print("  ID:", id_t, "| Nombre:", tecnicos[id_t]["nombre"]) # muestra ID y nombre
     return disponibles
 
 # Asigna un tecnico disponible a una orden existente
 def asignar_tecnico_a_orden(tecnicos, ordenes):
     print("\n--- Asignar Tecnico a Orden ---")
-    disponibles = obtener_tecnicos_disponibles(tecnicos, ordenes)  # pasa ordenes tambien
+    disponibles = mostrar_tecnicos_disponibles(tecnicos, ordenes)  # muestra y devuelve lista
     if not disponibles:
         return
 
@@ -471,10 +479,10 @@ def reasignar_tecnico_a_orden(tecnicos, ordenes):
     nombre_anterior = tecnicos[id_tecnico_actual]["nombre"]  # nombre del tecnico que se va a sacar
     print("Tecnico actual:", nombre_anterior)
 
-    disponibles = obtener_tecnicos_disponibles(tecnicos, ordenes)  # lista de tecnicos libres
+    disponibles = mostrar_tecnicos_disponibles(tecnicos, ordenes)  # muestra y devuelve lista
 
     if not disponibles:  # si no hay ninguno libre
-        return  # sale, obtener_tecnicos_disponibles ya imprimio el aviso
+        return  # sale, mostrar_tecnicos_disponibles ya imprimio el aviso
 
     try:
         id_tecnico_nuevo = int(input("Ingrese el ID del nuevo tecnico: "))  # pide el ID del nuevo
@@ -529,6 +537,7 @@ def finalizar_trabajo_tecnico(id_tecnico, tecnicos, ordenes):
     guardar_tecnicos(tecnicos)
     guardar_ordenes(ordenes)  # guarda el estado completada de la orden
     print("El tecnico", tecnicos[id_tecnico]["nombre"], "finalizo su orden y esta disponible.")
+
 
 # ================================================================
 # MODULO 3 - CONTROL DE PAGOS Y DEUDAS
@@ -1280,17 +1289,18 @@ def menu():
         print("--- Técnicos ---")
         print("4. Registrar técnico")
         print("5. Mostrar técnicos")
-        print("6. Asignar técnico a una orden\n")
+        print("6. Mostrar técnicos disponibles")
+        print("7. Asignar técnico a una orden\n")
         print("--- Pagos ---")
-        print("7. Registrar pago")
-        print("8. Ver estado de pagos / deudas\n")
+        print("8. Registrar pago")
+        print("9. Ver estado de pagos / deudas\n")
         print("--- Clientes ---")
-        print("9. Buscar cliente")
-        print("10. Ver historial de cliente\n")
+        print("10. Buscar cliente")
+        print("11. Ver historial de cliente\n")
         print("--- Presupuestos ---")
-        print("11. Generar presupuesto")
-        print("12. Ver presupuestos")
-        print("13. Calcular comisiones de tecnicos")
+        print("12. Generar presupuesto")
+        print("13. Ver presupuestos")
+        print("14. Calcular comisiones de tecnicos")
         print("0. Salir")
         print("==============================================================")
 
@@ -1307,20 +1317,24 @@ def menu():
         elif opcion == "5":
             mostrar_tecnicos(tecnicos, ordenes)
         elif opcion == "6":
+            mostrar_tecnicos_disponibles(tecnicos, ordenes)
+        elif opcion == "7":
             asignar_tecnico_a_orden(tecnicos, ordenes)
-        elif opcion == "7":   # registrar un pago
+        elif opcion == "8":
+            reasignar_tecnico_a_orden(tecnicos, ordenes)
+        elif opcion == "9":   # registrar un pago
             registrar_pago(pagos, ordenes, clientes)
-        elif opcion == "8":  # ver clientes con deuda pendiente
+        elif opcion == "10":  # ver clientes con deuda pendiente
             ver_deudores(pagos, clientes)
-        elif opcion == "9":  # buscar un cliente
+        elif opcion == "11":  # buscar un cliente
             buscar_cliente(clientes, pagos)
-        elif opcion == "10":   # ver historial de un cliente
+        elif opcion == "12":   # ver historial de un cliente
             ver_historial_cliente(clientes, ordenes, pagos, tecnicos)
-        elif opcion == "11":  # generar un presupuesto
+        elif opcion == "13":  # generar un presupuesto
             generar_presupuesto(presupuestos, ordenes, clientes)
-        elif opcion == "12": # ver presupuestos existentes
+        elif opcion == "14": # ver presupuestos existentes
             ver_presupuestos(presupuestos, ordenes, clientes)
-        elif opcion == "13": # calcular comisiones de tecnicos
+        elif opcion == "15": # calcular comisiones de tecnicos
             calcular_comisiones(tecnicos, ordenes, pagos)
         elif opcion == "0":  # salir del sistema
             print("Saliendo del sistema...")
